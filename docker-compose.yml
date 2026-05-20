@@ -86,29 +86,24 @@ services:
       - nominatim_data:/var/lib/postgresql/14/main
     restart: unless-stopped
 
-  osrm-extract:
+  osrm-routed:
     image: osrm/osrm-backend:latest
-    profiles:
-      - no_deploy
     command: >
       bash -c "
         if [ ! -f /data/cameroon.osrm ]; then
-          wget -O /data/cameroon.osm.pbf https://download.geofabrik.de/africa/cameroon-latest.osm.pbf &&
-          osrm-extract -p /opt/car.lua /data/cameroon.osm.pbf &&
-          osrm-partition /data/cameroon.osrm &&
+          echo 'Downloading Cameroon OSM data...';
+          wget -q -O /data/cameroon.osm.pbf https://download.geofabrik.de/africa/cameroon-latest.osm.pbf;
+          echo 'Extracting OSRM data...';
+          osrm-extract -p /opt/car.lua /data/cameroon.osm.pbf;
+          osrm-partition /data/cameroon.osrm;
           osrm-customize /data/cameroon.osrm;
-        fi
+          rm /data/cameroon.osm.pbf;
+        fi;
+        echo 'Starting OSRM server...';
+        osrm-routed --algorithm mld /data/cameroon.osrm
       "
     volumes:
       - osrm_data:/data
-
-  osrm-routed:
-    image: osrm/osrm-backend:latest
-    command: osrm-routed --algorithm mld /data/cameroon.osrm
-    volumes:
-      - osrm_data:/data
-    depends_on:
-      - osrm-extract
     restart: unless-stopped
 
   kannel:
