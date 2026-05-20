@@ -1,0 +1,1 @@
+export function PatientRegister() { return <div>Patient Register</div>; }

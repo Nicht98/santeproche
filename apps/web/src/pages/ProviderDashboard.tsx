@@ -1,0 +1,1 @@
+export function ProviderDashboard() { return <div>Provider Dashboard</div>; }

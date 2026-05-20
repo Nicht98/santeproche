@@ -1,0 +1,7 @@
+api.santeproche.local {
+    reverse_proxy localhost:3000
+}
+
+app.santeproche.local {
+    reverse_proxy localhost:5173
+}

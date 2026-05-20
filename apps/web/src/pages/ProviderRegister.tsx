@@ -1,0 +1,1 @@
+export function ProviderRegister() { return <div>Provider Register</div>; }
