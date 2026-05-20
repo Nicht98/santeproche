@@ -1,77 +1,103 @@
-version: "3.8"
-
 services:
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/api/Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgres://sante:secret@db:5432/santeproche
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://sante:${DB_PASSWORD:-secret}@db:5432/santeproche
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - JWT_SECRET=dev-jwt-secret-change-in-prod
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - JWT_SECRET=${JWT_SECRET}
       - OSRM_URL=http://osrm-routed:5000
       - NOMINATIM_URL=http://nominatim:8080
       - KANNEL_URL=http://kannel:13013
     depends_on:
-      - db
-      - redis
-      - minio
-    volumes:
-      - ./apps/api:/app
-      - /app/node_modules
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    ports:
+      - "5173:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
 
   db:
     image: postgis/postgis:15-3.4
     environment:
       POSTGRES_USER: sante
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
       POSTGRES_DB: santeproche
-    ports:
-      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sante -d santeproche"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - minio_data:/data
+    restart: unless-stopped
 
   nominatim:
     image: mediagis/nominatim:4.4
     environment:
       PBF_URL: "https://download.geofabrik.de/africa/cameroon-latest.osm.pbf"
       REPLICATION_URL: "https://download.geofabrik.de/africa/cameroon-updates/"
-    ports:
-      - "8080:8080"
     volumes:
       - nominatim_data:/var/lib/postgresql/14/main
+    restart: unless-stopped
 
   osrm-extract:
     image: osrm/osrm-backend:latest
+    profiles:
+      - no_deploy
     command: >
       bash -c "
-        wget -O /data/cameroon.osm.pbf https://download.geofabrik.de/africa/cameroon-latest.osm.pbf &&
-        osrm-extract -p /opt/car.lua /data/cameroon.osm.pbf &&
-        osrm-partition /data/cameroon.osrm &&
-        osrm-customize /data/cameroon.osrm
+        if [ ! -f /data/cameroon.osrm ]; then
+          wget -O /data/cameroon.osm.pbf https://download.geofabrik.de/africa/cameroon-latest.osm.pbf &&
+          osrm-extract -p /opt/car.lua /data/cameroon.osm.pbf &&
+          osrm-partition /data/cameroon.osrm &&
+          osrm-customize /data/cameroon.osrm;
+        fi
       "
     volumes:
       - osrm_data:/data
@@ -79,39 +105,40 @@ services:
   osrm-routed:
     image: osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/cameroon.osrm
-    ports:
-      - "5000:5000"
     volumes:
       - osrm_data:/data
     depends_on:
       - osrm-extract
+    restart: unless-stopped
 
   kannel:
-    image: tobias74/kannel:latest
-    ports:
-      - "13013:13013"
-      - "13000:13000"
-    volumes:
-      - ./infra/kannel/kannel.conf:/etc/kannel/kannel.conf
+    build:
+      context: .
+      dockerfile: ./infra/kannel/Dockerfile
     environment:
-      KANNEL_ADMIN_PASSWORD: admin-secret
+      KANNEL_ADMIN_PASSWORD: ${KANNEL_ADMIN_PASSWORD:-admin-secret}
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: grafana-secret
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-grafana-secret}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
 
 volumes:
   pg_data:
+  redis_data:
   minio_data:
   nominatim_data:
   osrm_data:
+  prometheus_data:
+  grafana_data:
