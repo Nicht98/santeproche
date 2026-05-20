@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgres://sante:${DB_PASSWORD:-secret}@db:5432/santeproche
