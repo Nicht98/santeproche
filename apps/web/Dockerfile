@@ -3,7 +3,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy workspace config
-COPY package.json pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared-types/package.json packages/shared-types/
 RUN pnpm install --frozen-lockfile
