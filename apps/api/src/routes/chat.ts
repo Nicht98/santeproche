@@ -1,12 +1,12 @@
 import { FastifyPluginAsync } from 'fastify';
-import { db } from '../infra/db.js';
+import { query } from '../infra/db.js';
 import { redis } from '../infra/redis.js';
 
 export const chatRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /conversations
   fastify.get('/conversations', { preHandler: [fastify.authenticate] }, async (request) => {
-    const userId = request.user!.id;
-    const convs = await db.execute(`
+    const userId = (request.user as { id: string }).id;
+    const convs = await query(`
       SELECT c.*, u.display_name as other_party_name
       FROM conversations c
       JOIN users u ON u.id = CASE WHEN c.patient_id = $1 THEN c.provider_id ELSE c.patient_id END
@@ -17,17 +17,17 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // POST /conversations/:id/messages
-  fastify.post('/conversations/:id/messages', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+  fastify.post('/conversations/:id/messages', { preHandler: [fastify.authenticate] }, async (request, _reply) => {
     const { id } = request.params as { id: string };
     const { content, type = 'text' } = request.body as { content: string; type?: string };
-    const userId = request.user!.id;
+    const userId = (request.user as { id: string }).id;
 
-    const [message] = await db.execute(
+    const [message] = await query(
       'INSERT INTO messages (conversation_id, sender_id, type, content) VALUES ($1, $2, $3, $4) RETURNING *',
       [id, userId, type, content]
     );
 
-    await db.execute(
+    await query(
       'UPDATE conversations SET last_message_at = NOW(), provider_unread_count = provider_unread_count + 1 WHERE id = $1',
       [id]
     );

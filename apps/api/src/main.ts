@@ -1,10 +1,10 @@
 import 'dotenv/config';
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
-import { db } from './infra/db.js';
+import { query } from './infra/db.js';
 import { redis } from './infra/redis.js';
 import { authRoutes } from './routes/auth.js';
 import { facilityRoutes } from './routes/facilities.js';
@@ -14,6 +14,15 @@ import { providerRoutes } from './routes/providers.js';
 
 const fastify = Fastify({
   logger: { transport: { target: 'pino-pretty' } },
+});
+
+// Decorate fastify with authenticate
+fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    await request.jwtVerify();
+  } catch (err) {
+    reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } });
+  }
 });
 
 // Register plugins
@@ -29,7 +38,7 @@ await fastify.register(rateLimit, {
 // Health checks
 fastify.get('/health', async () => ({ status: 'ok' }));
 fastify.get('/ready', async () => {
-  await db.execute('SELECT 1');
+  await query('SELECT 1');
   await redis.ping();
   return { status: 'ready' };
 });
@@ -42,7 +51,7 @@ await fastify.register(bookingRoutes, { prefix: '/api/v1' });
 await fastify.register(providerRoutes, { prefix: '/api/v1' });
 
 // Error handler
-fastify.setErrorHandler((err, req, reply) => {
+fastify.setErrorHandler((err, _req, reply) => {
   fastify.log.error(err);
   reply.status(err.statusCode || 500).send({
     error: {
