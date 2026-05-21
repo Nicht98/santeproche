@@ -30,6 +30,7 @@ export const facilities = pgTable('facilities', {
   hasEmergency: boolean('has_emergency').notNull().default(false),
   licenseNumber: varchar('license_number', { length: 100 }),
   licenseVerified: boolean('license_verified').notNull().default(false),
+  avatarUrl: text('avatar_url'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

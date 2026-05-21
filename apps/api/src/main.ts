@@ -14,6 +14,13 @@ import { providerRoutes } from './routes/providers.js';
 import { patientRoutes } from './routes/patients.js';
 import { adminRoutes } from './routes/admin.js';
 
+import { reviewRoutes } from './routes/reviews.js';
+import { notificationRoutes } from './routes/notifications.js';
+import { prescriptionRoutes } from './routes/prescriptions.js';
+import { consultationRoutes } from './routes/consultations.js';
+import { sosRoutes } from './routes/sos.js';
+import { uploadRoutes } from './routes/upload.js';
+
 // Validate critical env vars FIRST (before Fastify)
 const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
 const missing = requiredEnv.filter((k) => !process.env[k]);
@@ -102,6 +109,12 @@ await fastify.register(bookingRoutes, { prefix: '/api/v1' });
 await fastify.register(providerRoutes, { prefix: '/api/v1' });
 await fastify.register(patientRoutes, { prefix: '/api/v1' });
 await fastify.register(adminRoutes, { prefix: '/api/v1' });
+await fastify.register(reviewRoutes, { prefix: '/api/v1' });
+await fastify.register(notificationRoutes, { prefix: '/api/v1' });
+await fastify.register(prescriptionRoutes, { prefix: '/api/v1' });
+await fastify.register(consultationRoutes, { prefix: '/api/v1' });
+await fastify.register(sosRoutes, { prefix: '/api/v1' });
+await fastify.register(uploadRoutes, { prefix: '/api/v1' });
 
 // Error handler
 fastify.setErrorHandler((err, _req, reply) => {
