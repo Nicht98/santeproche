@@ -2,6 +2,7 @@ services:
   # ===========================================
   #   FRONTEND ONLY — SPA served via Nginx
   #   Build with VITE_API_URL pointing at deployed backend
+  #   No host port binding — exposed internally for proxy
   # ===========================================
   web:
     build:
@@ -9,8 +10,8 @@ services:
       dockerfile: ./apps/web/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL}
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
