@@ -16,6 +16,8 @@ RUN pnpm --filter @santeproche/api build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Install curl for healthchecks and debugging
+RUN apk add --no-cache curl
 # Copy built app
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
