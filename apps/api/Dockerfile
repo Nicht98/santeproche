@@ -19,8 +19,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
 COPY --from=builder /app/apps/api/src/db/migrations ./dist/db/migrations
-COPY --from=builder /app/node_modules ./node_modules
-COPY apps/api/startup.sh ./startup.sh
+COPY --from=builder /app/apps/api/startup.sh ./startup.sh
+RUN npm install --omit=dev --ignore-scripts
 RUN chmod +x ./startup.sh
 EXPOSE 3000
 CMD ["./startup.sh"]
