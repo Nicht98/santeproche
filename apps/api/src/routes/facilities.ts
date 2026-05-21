@@ -17,18 +17,6 @@ const FacilityQuerySchema = z.object({
   offset: z.string().optional().default('0'),
 });
 
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /facilities — list with filters
   fastify.get('/facilities', async (request, _reply) => {
@@ -49,52 +37,105 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
       conditions.push(inArray(facilities.kind, kinds));
     }
     if (q.search) {
-      conditions.push(ilike(facilities.name, `%${q.search}%`));
+      conditions.push(sql`(${ilike(facilities.name, `%${q.search}%`)} OR ${ilike(facilities.address, `%${q.search}%`)})`);
     }
     if (q.hasEmergency === 'true') {
       conditions.push(eq(facilities.hasEmergency, true));
     }
+    if (q.openNow === 'true') {
+      const now = new Date();
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const currentDay = dayNames[now.getDay()];
+      const currentHour = String(now.getUTCHours()).padStart(2, '0');
+      const currentMinute = String(now.getUTCMinutes()).padStart(2, '0');
+      const currentTime = `${currentHour}:${currentMinute}`;
 
-    const rows = await db
-      .select({
-        id: facilities.id,
-        name: facilities.name,
-        kind: facilities.kind,
-        status: facilities.status,
-        address: facilities.address,
-        phone: facilities.phone,
-        email: facilities.email,
-        lat: facilities.lat,
-        lng: facilities.lng,
-        openingHours: facilities.openingHours,
-        is24h: facilities.is24h,
-        hasEmergency: facilities.hasEmergency,
-        licenseVerified: facilities.licenseVerified,
-        cityName: cities.name,
-        createdAt: facilities.createdAt,
-      })
-      .from(facilities)
-      .leftJoin(cities, eq(facilities.cityId, cities.id))
-      .where(and(...conditions))
-      .limit(limit)
-      .offset(offset)
-      .orderBy(facilities.name);
+      conditions.push(
+        sql`CASE
+          WHEN ${facilities.is24h} = true THEN true
+          WHEN ${facilities.openingHours} IS NULL THEN false
+          WHEN (${facilities.openingHours}->${currentDay}) IS NULL THEN false
+          WHEN (${facilities.openingHours}->>${currentDay}->>'open') IS NULL THEN false
+          WHEN (${facilities.openingHours}->>${currentDay}->>'close') IS NULL THEN false
+          ELSE
+            ((${facilities.openingHours}->${currentDay}->>'open')::time <= ${currentTime}::time
+            AND (${facilities.openingHours}->${currentDay}->>'close')::time >= ${currentTime}::time)
+        END`
+      );
+    }
 
-    // Calculate distance if lat/lng provided
-    let data = rows;
+    let data;
     if (q.lat && q.lng) {
+      // SQL-level haversine distance for accurate filtering + sorting
       const lat = parseFloat(q.lat);
       const lng = parseFloat(q.lng);
-      const radiusKm = parseFloat(q.radiusKm);
-      data = rows
-        .map((f) => ({
-          ...f,
-          distanceKm: f.lat && f.lng
-            ? haversineDistance(lat, lng, parseFloat(f.lat), parseFloat(f.lng))
-            : null,
-        }))
-        .filter((f) => f.distanceKm === null || f.distanceKm <= radiusKm)
-        .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+      const radiusKm = parseFloat(q.radiusKm || '10');
+      const R = 6371;
+
+      const distanceExpr = sql`(
+        ${R} * acos(
+          LEAST(1, GREATEST(-1,
+            cos(radians(${lat})) * cos(radians(${facilities.lat}::float)) *
+            cos(radians(${facilities.lng}::float) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(${facilities.lat}::float))
+          ))
+        )
+      )`;
+
+      const rows = await db
+        .select({
+          id: facilities.id,
+          name: facilities.name,
+          kind: facilities.kind,
+          status: facilities.status,
+          address: facilities.address,
+          phone: facilities.phone,
+          email: facilities.email,
+          lat: facilities.lat,
+          lng: facilities.lng,
+          openingHours: facilities.openingHours,
+          is24h: facilities.is24h,
+          hasEmergency: facilities.hasEmergency,
+          licenseVerified: facilities.licenseVerified,
+          cityName: cities.name,
+          createdAt: facilities.createdAt,
+          distanceKm: distanceExpr.as('distance_km'),
+        })
+        .from(facilities)
+        .leftJoin(cities, eq(facilities.cityId, cities.id))
+        .where(and(...conditions, sql`${distanceExpr} <= ${radiusKm}`))
+        .orderBy(sql`${distanceExpr}`)
+        .limit(limit)
+        .offset(offset);
+
+      data = rows.map((r) => ({ ...r, distanceKm: r.distanceKm ? parseFloat(r.distanceKm as string) : null }));
+    } else {
+      const rows = await db
+        .select({
+          id: facilities.id,
+          name: facilities.name,
+          kind: facilities.kind,
+          status: facilities.status,
+          address: facilities.address,
+          phone: facilities.phone,
+          email: facilities.email,
+          lat: facilities.lat,
+          lng: facilities.lng,
+          openingHours: facilities.openingHours,
+          is24h: facilities.is24h,
+          hasEmergency: facilities.hasEmergency,
+          licenseVerified: facilities.licenseVerified,
+          cityName: cities.name,
+          createdAt: facilities.createdAt,
+        })
+        .from(facilities)
+        .leftJoin(cities, eq(facilities.cityId, cities.id))
+        .where(and(...conditions))
+        .orderBy(facilities.name)
+        .limit(limit)
+        .offset(offset);
+
+      data = rows;
     }
 
     return {
