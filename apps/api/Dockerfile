@@ -21,7 +21,7 @@ COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
 COPY --from=builder /app/apps/api/src/db/migrations ./dist/db/migrations
 COPY --from=builder /app/apps/api/startup.sh ./startup.sh
-# Copy all node_modules (workspace deps are hoisted by pnpm)
+# Copy all node_modules from workspace root (pnpm hoisted deps)
 COPY --from=builder /app/node_modules ./node_modules
 RUN chmod +x ./startup.sh
 EXPOSE 3000

@@ -1,17 +1,13 @@
 import { Pool } from 'pg';
 import { readFileSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 2,
+});
 
-async function migrate() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    max: 2,
-  });
-
-  // Create migrations tracking table
+export async function migrate() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS drizzle_migrations (
       id SERIAL PRIMARY KEY,
@@ -20,7 +16,7 @@ async function migrate() {
     )
   `);
 
-  const migrationsDir = join(__dirname, 'migrations');
+  const migrationsDir = join(process.cwd(), 'dist', 'db', 'migrations');
   let files: string[];
   try {
     files = readdirSync(migrationsDir)
@@ -52,8 +48,3 @@ async function migrate() {
 
   await pool.end();
 }
-
-migrate().catch((err) => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
