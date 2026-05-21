@@ -13,8 +13,21 @@ import { bookingRoutes } from './routes/booking.js';
 import { providerRoutes } from './routes/providers.js';
 
 const fastify = Fastify({
-  logger: { transport: { target: 'pino-pretty' } },
+  logger: {
+    level: process.env.LOG_LEVEL || 'info',
+    ...(process.env.NODE_ENV !== 'production' && {
+      transport: { target: 'pino-pretty' },
+    }),
+  },
 });
+
+// Validate critical env vars
+const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
+const missing = requiredEnv.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  fastify.log.error(`Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
 
 // Decorate fastify with authenticate
 fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
