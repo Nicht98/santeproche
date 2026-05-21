@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { query } from '../infra/db.js';
+import { query } from '../db/index.js';
 
 export const providerRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /providers/register

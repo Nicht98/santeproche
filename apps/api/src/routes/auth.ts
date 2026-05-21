@@ -1,8 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
 import { generateOtp, verifyOtp } from '../services/otp-service.js';
 import { sendSms } from '../infra/kannel.js';
-import { query } from '../infra/db.js';
+import { db } from '../db/index.js';
+import { users, refreshTokens } from '../db/schema/index.js';
+import crypto from 'crypto';
 
 const OtpRequestSchema = z.object({
   phone: z.string().regex(/^\+237[0-9]{9}$/),
@@ -13,12 +16,16 @@ const OtpVerifySchema = z.object({
   code: z.string().length(6),
 });
 
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /auth/otp/request
   fastify.post('/auth/otp/request', async (request, reply) => {
     const body = OtpRequestSchema.parse(request.body);
     const otp = await generateOtp(body.phone);
-    await sendSms(body.phone, `Your SanteProche code: ${otp}`);
+    await sendSms(body.phone, `Votre code SanteProche: ${otp}`);
     return reply.code(202).send({ message: 'OTP sent', expiresInSeconds: 300 });
   });
 
@@ -31,24 +38,44 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Find or create user
-    let users = await query(
-      'SELECT id, phone, role FROM users WHERE phone = $1 LIMIT 1',
-      [body.phone]
-    );
-    let user = users[0] as { id: string; phone: string; role: string };
+    let [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1);
 
     if (!user) {
-      const result = await query(
-        'INSERT INTO users (phone, phone_verified, role) VALUES ($1, true, $2) RETURNING id, phone, role',
-        [body.phone, 'patient']
-      );
-      user = result[0] as { id: string; phone: string; role: string };
+      const result = await db.insert(users).values({
+        phone: body.phone,
+        phoneVerified: true,
+        role: 'patient',
+        status: 'active',
+      }).returning();
+      user = result[0];
+    } else if (!user.phoneVerified) {
+      // Update phone_verified if it was false
+      const result = await db.update(users)
+        .set({ phoneVerified: true, updatedAt: new Date() })
+        .where(eq(users.id, user.id))
+        .returning();
+      user = result[0];
     }
 
-    const accessToken = fastify.jwt.sign({ id: user.id, phone: user.phone, role: user.role }, { expiresIn: '15m' });
-    const refreshToken = fastify.jwt.sign({ id: user.id }, { expiresIn: '7d' });
+    const accessToken = fastify.jwt.sign(
+      { id: user.id, phone: user.phone as string, role: user.role as string },
+      { expiresIn: '15m' }
+    );
+    const refreshToken = fastify.jwt.sign(
+      { id: user.id },
+      { expiresIn: '7d' }
+    );
 
-    return { accessToken, refreshToken, user };
+    // Store refresh token hash in DB
+    await db.insert(refreshTokens).values({
+      userId: user.id,
+      tokenHash: hashToken(refreshToken),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      userAgent: request.headers['user-agent'] as string,
+      ipAddress: request.ip,
+    });
+
+    return { accessToken, refreshToken, user: { id: user.id, phone: user.phone, role: user.role, displayName: user.displayName } };
   });
 
   // POST /auth/refresh
@@ -56,14 +83,55 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     const body = z.object({ refreshToken: z.string() }).parse(request.body);
     try {
       const decoded = fastify.jwt.verify(body.refreshToken) as { id: string };
-      const users = await query('SELECT id, phone, role FROM users WHERE id = $1 LIMIT 1', [decoded.id]);
-      const user = users[0] as { id: string; phone: string; role: string };
+
+      // Validate refresh token exists and is not revoked
+      const tokenHash = hashToken(body.refreshToken);
+      const [stored] = await db.select().from(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, tokenHash))
+        .limit(1);
+
+      if (!stored || stored.revoked || new Date() > stored.expiresAt) {
+        return reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid refresh token' } });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, decoded.id)).limit(1);
       if (!user) return reply.code(401).send({ error: { code: 'UNAUTHORIZED' } });
-      const accessToken = fastify.jwt.sign({ id: user.id, phone: user.phone, role: user.role }, { expiresIn: '15m' });
-      return { accessToken };
+
+      // Rotate: revoke old token, issue new one
+      await db.update(refreshTokens).set({ revoked: true }).where(eq(refreshTokens.id, stored.id));
+
+      const newAccessToken = fastify.jwt.sign(
+        { id: user.id, phone: user.phone as string, role: user.role as string },
+        { expiresIn: '15m' }
+      );
+      const newRefreshToken = fastify.jwt.sign(
+        { id: user.id },
+        { expiresIn: '7d' }
+      );
+
+      await db.insert(refreshTokens).values({
+        userId: user.id,
+        tokenHash: hashToken(newRefreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        userAgent: request.headers['user-agent'] as string,
+        ipAddress: request.ip,
+      });
+
+      return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch {
       return reply.code(401).send({ error: { code: 'UNAUTHORIZED' } });
     }
+  });
+
+  // POST /auth/logout
+  fastify.post('/auth/logout', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const body = z.object({ refreshToken: z.string().optional() }).parse(request.body);
+    if (body.refreshToken) {
+      await db.update(refreshTokens)
+        .set({ revoked: true })
+        .where(eq(refreshTokens.tokenHash, hashToken(body.refreshToken)));
+    }
+    return reply.code(204).send();
   });
 
   // GET /auth/me

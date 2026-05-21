@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { query } from '../infra/db.js';
+import { query } from '../db/index.js';
 import { redis } from '../infra/redis.js';
 
 export const chatRoutes: FastifyPluginAsync = async (fastify) => {
