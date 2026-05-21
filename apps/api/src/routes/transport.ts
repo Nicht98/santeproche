@@ -1,0 +1,223 @@
+import { FastifyPluginAsync } from 'fastify';
+import { query } from '../db/index.js';
+
+const OSRM_URL = process.env.OSRM_URL || 'http://osrm-routed:5000';
+
+interface OsrmRouteResponse {
+  routes?: Array<{
+    distance: number;       // meters
+    duration: number;       // seconds
+    legs?: Array<{ distance: number; duration: number }>;
+  }>;
+}
+
+// Cameroon transport cost estimates (very rough, in XAF)
+function estimateTransportCost(distanceMeters: number, mode: string): {
+  mode: string;
+  costXaf: number;
+  durationMin: number;
+  description: string;
+}[] {
+  const distanceKm = distanceMeters / 1000;
+  const results = [];
+
+  if (mode === 'all' || mode === 'taxi') {
+    // Motorcycle taxi in Cameroon: roughly 150-300 XAF/km in cities
+    const motoCost = Math.round(distanceKm * 200);
+    const motoDur = Math.round((distanceMeters / 1000) / 0.4 * 60); // ~24 km/h avg
+    results.push({
+      mode: 'mototaxi',
+      costXaf: Math.max(200, motoCost),
+      durationMin: motoDur,
+      description: 'Motorcycle taxi — fastest in traffic',
+    });
+  }
+
+  if (mode === 'all' || mode === 'bus') {
+    // Bus: very cheap, fixed routes, slower
+    const busCost = Math.max(150, Math.round(distanceKm * 50));
+    const busDur = Math.round((distanceMeters / 1000) / 0.2 * 60); // ~12 km/h avg with stops
+    results.push({
+      mode: 'bus',
+      costXaf: busCost,
+      durationMin: busDur,
+      description: 'Shared bus — cheapest but fixed routes',
+    });
+  }
+
+  if (mode === 'all' || mode === 'car') {
+    // Car taxi / ride-hail
+    const carCost = Math.max(500, Math.round(distanceKm * 300));
+    const carDur = Math.round((distanceMeters / 1000) / 0.3 * 60); // ~18 km/h avg
+    results.push({
+      mode: 'car',
+      costXaf: carCost,
+      durationMin: carDur,
+      description: 'Private car taxi — most comfortable',
+    });
+  }
+
+  if (mode === 'all' || mode === 'walk') {
+    const walkDur = Math.round((distanceMeters / 1000) / 0.005 * 60); // ~5 km/h
+    if (walkDur <= 60) { // Only if under 1 hour
+      results.push({
+        mode: 'walk',
+        costXaf: 0,
+        durationMin: walkDur,
+        description: 'Walking — free and healthy',
+      });
+    }
+  }
+
+  return results;
+}
+
+// Node 20+ global fetch
+declare const fetch: typeof globalThis.fetch;
+
+export const transportRoutes: FastifyPluginAsync = async (fastify) => {
+  // POST /transport/route — route between two points with cost estimates
+  fastify.post('/transport/route', async (request, reply) => {
+    const { fromLat, fromLng, toLat, toLng, mode = 'all' } = request.body as Record<string, any>;
+
+    if (!fromLat || !fromLng || !toLat || !toLng) {
+      return reply.code(400).send({
+        error: { code: 'MISSING_COORDS', message: 'fromLat, fromLng, toLat, toLng are required' },
+      });
+    }
+
+    try {
+      const osrmUrl = `${OSRM_URL}/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`;
+      const osrmRes = await fetch(osrmUrl);
+
+      if (!osrmRes.ok) {
+        return reply.code(502).send({
+          error: { code: 'OSRM_ERROR', message: 'Routing service unavailable' },
+        });
+      }
+
+      const osrmData = (await osrmRes.json()) as OsrmRouteResponse;
+      const route = osrmData.routes?.[0];
+      if (!route) {
+        return reply.code(404).send({
+          error: { code: 'NO_ROUTE', message: 'No route found between locations' },
+        });
+      }
+
+      const distanceMeters = route.distance;
+      const durationSeconds = route.duration;
+      const options = estimateTransportCost(distanceMeters, mode);
+
+      return {
+        status: 'success',
+        route: {
+          distanceKm: Number((distanceMeters / 1000).toFixed(2)),
+          durationMin: Math.round(durationSeconds / 60),
+        },
+        options: options.map((o) => ({
+          ...o,
+          costXaf: o.costXaf,
+          durationMin: o.durationMin,
+        })),
+      };
+    } catch (_err) {
+      return reply.code(502).send({
+        error: { code: 'ROUTING_FAILED', message: 'Could not calculate route' },
+      });
+    }
+  });
+
+  // POST /transport/nearby — route from user location to nearest facilities of a type
+  fastify.post('/transport/nearby', async (request, reply) => {
+    const { fromLat, fromLng, kind, radiusKm = '5', limit = '5' } = request.body as Record<string, any>;
+
+    if (!fromLat || !fromLng) {
+      return reply.code(400).send({
+        error: { code: 'MISSING_COORDS', message: 'fromLat and fromLng are required' },
+      });
+    }
+
+    // Find nearby facilities
+    const R = 6371;
+    const facilitiesList = await query(
+      `SELECT *,
+        (${R} * acos(LEAST(1, GREATEST(-1,
+          cos(radians($1)) * cos(radians(lat::float)) *
+          cos(radians(lng::float) - radians($2)) +
+          sin(radians($1)) * sin(radians(lat::float))
+        )))) as distance_km
+      FROM facilities
+      WHERE is_active = true AND deleted_at IS NULL
+        ${kind ? "AND kind = '" + kind + "'" : ''}
+      HAVING distance_km <= $3
+      ORDER BY distance_km
+      LIMIT $4`,
+      [parseFloat(fromLat), parseFloat(fromLng), parseFloat(radiusKm), parseInt(limit, 10)]
+    );
+
+    // Get routing + cost for each facility
+    const results = await Promise.all(
+      facilitiesList.map(async (f: Record<string, any>) => {
+        try {
+          const osrmUrl = `${OSRM_URL}/route/v1/driving/${fromLng},${fromLat};${f.lng},${f.lat}?overview=false`;
+          const osrmRes = await fetch(osrmUrl);
+
+          let route = null;
+          let options: any[] = [];
+
+          if (osrmRes.ok) {
+            const osrmData = (await osrmRes.json()) as OsrmRouteResponse;
+            route = osrmData.routes?.[0];
+            if (route) {
+              options = estimateTransportCost(route.distance, 'all');
+            }
+          }
+
+          return {
+            facility: {
+              id: f.id,
+              name: f.name,
+              kind: f.kind,
+              address: f.address,
+              phone: f.phone,
+              lat: f.lat,
+              lng: f.lng,
+              is24h: f.is_24h,
+              hasEmergency: f.has_emergency,
+            },
+            distanceKm: f.distance_km,
+            route: route
+              ? {
+                  distanceKm: Number((route.distance / 1000).toFixed(2)),
+                  durationMin: Math.round(route.duration / 60),
+                }
+              : null,
+            options: options.slice(0, 3), // Top 3 modes
+          };
+        } catch (_err) {
+          return {
+            facility: { id: f.id, name: f.name, kind: f.kind, address: f.address, phone: f.phone, lat: f.lat, lng: f.lng, is24h: f.is_24h, hasEmergency: f.has_emergency },
+            distanceKm: f.distance_km,
+            route: null,
+            options: [],
+          };
+        }
+      })
+    );
+
+    return { status: 'success', data: results };
+  });
+
+  // GET /transport/stats — simple overview for admin/metrics
+  fastify.get('/transport/stats', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { role } = request.user;
+    if (role !== 'admin') {
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Admin only' } });
+    }
+
+    return {
+      status: 'success',
+      message: 'Transport stats coming soon — requires analytics pipeline',
+    };
+  });
+};

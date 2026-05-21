@@ -18,6 +18,8 @@ import { reviewRoutes } from './routes/reviews.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { prescriptionRoutes } from './routes/prescriptions.js';
 import { consultationRoutes } from './routes/consultations.js';
+import { drugRoutes } from './routes/drugs.js';
+import { transportRoutes } from './routes/transport.js';
 import { sosRoutes } from './routes/sos.js';
 import { uploadRoutes } from './routes/upload.js';
 
@@ -114,6 +116,8 @@ await fastify.register(notificationRoutes, { prefix: '/api/v1' });
 await fastify.register(prescriptionRoutes, { prefix: '/api/v1' });
 await fastify.register(consultationRoutes, { prefix: '/api/v1' });
 await fastify.register(sosRoutes, { prefix: '/api/v1' });
+await fastify.register(drugRoutes, { prefix: '/api/v1' });
+await fastify.register(transportRoutes, { prefix: '/api/v1' });
 await fastify.register(uploadRoutes, { prefix: '/api/v1' });
 
 // Error handler
