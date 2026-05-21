@@ -138,3 +138,13 @@ export function useSendMessage() {
     },
   });
 }
+
+export function useStartConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: chat.start,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}

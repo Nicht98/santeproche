@@ -211,7 +211,8 @@ export interface Conversation {
   title: string;
   lastMessage?: string;
   lastMessageAt?: string;
-  participants: string[];
+  patientId?: string;
+  providerId?: string;
 }
 export interface Message {
   id: string;
@@ -222,11 +223,19 @@ export interface Message {
 }
 export const chat = {
   conversations: () =>
-    api<{ data: Conversation[] }>('/chat/conversations'),
+    api<{ data: Conversation[] }>('/conversations'),
   messages: (conversationId: string) =>
-    api<{ data: Message[] }>(`/chat/conversations/${conversationId}/messages`),
-  send: (body: { conversationId?: string; receiverId: string; content: string }) =>
-    api<{ data: Message }>('/chat/send', { method: 'POST', body: JSON.stringify(body) }),
+    api<{ data: Message[] }>(`/conversations/${conversationId}/messages`),
+  send: (body: { conversationId: string; content: string }) =>
+    api<{ data: Message }>(`/conversations/${body.conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content: body.content, type: 'text' }),
+    }),
+  start: (body: { receiverId: string; title?: string }) =>
+    api<{ status: string; conversation: Conversation }>('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ receiverId: body.receiverId, title: body.title }),
+    }),
 };
 
 /* ---------- Helpers ---------- */

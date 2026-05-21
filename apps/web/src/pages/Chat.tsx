@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, User } from 'lucide-react';
+import { useAuthStore } from '../stores/auth';
 import { useConversations, useMessages, useSendMessage } from '../hooks/api';
 import { LoadingScreen } from '../components/ui';
 
 export function Chat() {
+  const user = useAuthStore((s) => s.user);
+  const userId = user?.id;
+
   const { data: convoData, isLoading } = useConversations();
   const [activeId, setActiveId] = useState<string | undefined>();
   const { data: msgData } = useMessages(activeId);
@@ -56,17 +60,17 @@ export function Chat() {
             {(msgData?.data ?? []).map((m) => (
               <div
                 key={m.id}
-                className={`flex ${m.senderId === 'me' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${m.senderId === userId ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
-                    m.senderId === 'me'
+                    m.senderId === userId
                       ? 'bg-brand-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
                   {m.content}
-                  <p className={`mt-1 text-[10px] ${m.senderId === 'me' ? 'text-brand-200' : 'text-gray-400'}`}>
+                  <p className={`mt-1 text-[10px] ${m.senderId === userId ? 'text-brand-200' : 'text-gray-400'}`}>
                     {new Date(m.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -78,8 +82,8 @@ export function Chat() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!text.trim()) return;
-              send.mutate({ receiverId: activeId, content: text });
+              if (!text.trim() || !activeId) return;
+              send.mutate({ conversationId: activeId, content: text.trim() });
               setText('');
             }}
             className="flex items-center gap-2 border-t px-4 py-2"
