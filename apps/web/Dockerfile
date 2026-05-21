@@ -11,6 +11,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
+
+# Build with env injected at build time (Docker handles this)
 RUN pnpm --filter @santeproche/web build
 
 FROM nginx:alpine AS runner
