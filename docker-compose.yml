@@ -121,7 +121,7 @@ services:
     restart: unless-stopped
 
   osrm-routed:
-    image: gisops/door2door-osrm-backend:v5.27.1
+    image: osrm/osrm-backend:latest
     command: osrm-routed /data/cameroon.osrm --algorithm mld
     expose:
       - "5000"
