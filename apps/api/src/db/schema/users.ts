@@ -1,4 +1,5 @@
-import { pgTable, uuid, varchar, boolean, timestamp, pgEnum, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, boolean, timestamp, pgEnum, text, integer } from 'drizzle-orm/pg-core';
+import { cities } from './cities.js';
 
 export const userRoleEnum = pgEnum('user_role', [
   'patient', 'pharmacist', 'doctor', 'clinic_admin', 'hospital_admin', 'admin'
@@ -29,6 +30,10 @@ export const patientProfiles = pgTable('patient_profiles', {
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   dateOfBirth: timestamp('date_of_birth', { withTimezone: true }),
+  gender: varchar('gender', { length: 20 }),
+  bloodType: varchar('blood_type', { length: 5 }),
+  address: text('address'),
+  cityId: integer('city_id').references(() => cities.id, { onDelete: 'set null' }),
   emergencyContactPhone: varchar('emergency_contact_phone', { length: 20 }),
   emergencyContactName: varchar('emergency_contact_name', { length: 100 }),
   allergies: text('allergies').array(),

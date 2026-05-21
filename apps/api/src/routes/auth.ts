@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { generateOtp, verifyOtp } from '../services/otp-service.js';
 import { sendSms } from '../infra/kannel.js';
 import { db } from '../db/index.js';
-import { users, refreshTokens } from '../db/schema/index.js';
+import { users, refreshTokens, patientProfiles } from '../db/schema/index.js';
 import crypto from 'crypto';
 
 const OtpRequestSchema = z.object({
@@ -75,7 +75,13 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       ipAddress: request.ip,
     });
 
-    return { accessToken, refreshToken, user: { id: user.id, phone: user.phone, role: user.role, displayName: user.displayName } };
+    let isProfileComplete = false;
+    if (user) {
+      const [profile] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, user.id)).limit(1);
+      isProfileComplete = !!profile;
+    }
+
+    return { accessToken, refreshToken, isProfileComplete, user: { id: user.id, phone: user.phone, role: user.role, displayName: user.displayName } };
   });
 
   // POST /auth/refresh
