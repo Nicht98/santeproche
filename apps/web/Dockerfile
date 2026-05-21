@@ -2,6 +2,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm
 
+# Build-time env for API base URL
+ARG VITE_API_URL=/api/v1
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Copy workspace config
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY apps/web/package.json apps/web/
@@ -11,8 +15,6 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
-
-# Build with env injected at build time (Docker handles this)
 RUN pnpm --filter @santeproche/web build
 
 FROM nginx:alpine AS runner
