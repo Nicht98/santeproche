@@ -87,14 +87,7 @@ services:
     restart: unless-stopped
 
   osrm-routed:
-    build:
-      context: .
-      dockerfile: ./infra/osrm/Dockerfile
-    environment:
-      - OSRM_REGION=cameroon
-      - OSRM_OSM_URL=https://download.geofabrik.de/africa/cameroon-latest.osm.pbf
-      - OSRM_PROFILE=/opt/car.lua
-      - OSRM_DATA_DIR=/data
+    image: osrm/osrm-backend:latest
     volumes:
       - osrm_data:/data
     restart: unless-stopped
