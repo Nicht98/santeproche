@@ -106,6 +106,10 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
         kycStatus: providerProfiles.kycStatus,
         facilityId: providerProfiles.facilityId,
         facilityName: facilities.name,
+        facilityAddress: facilities.address,
+        facilityPhone: facilities.phone,
+        facilityLat: facilities.lat,
+        facilityLng: facilities.lng,
       })
       .from(users)
       .innerJoin(providerProfiles, eq(users.id, providerProfiles.userId))
@@ -122,7 +126,22 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Provider not found' } });
     }
 
-    return row;
+    // Fetch weekly schedule
+    const schedules = await db
+      .select()
+      .from(providerSchedules)
+      .where(
+        and(
+          eq(providerSchedules.providerId, id),
+          eq(providerSchedules.isActive, true)
+        )
+      )
+      .orderBy(providerSchedules.dayOfWeek);
+
+    const dayOrder = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+    const ordered = schedules.sort((a, b) => dayOrder.indexOf(a.dayOfWeek) - dayOrder.indexOf(b.dayOfWeek));
+
+    return { data: { ...row, schedules: ordered } };
   });
 
   // POST /providers/register
