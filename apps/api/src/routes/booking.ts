@@ -185,6 +185,46 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
     return { data: rows, pagination: { limit: parseInt(limit, 10), offset: parseInt(offset, 10), count: rows.length } };
   });
 
+  // GET /appointments/provider — list appointments where I am the provider
+  fastify.get('/appointments/provider', { preHandler: [fastify.authenticate] }, async (request) => {
+    const userId = request.user.id;
+    const { status, limit = '20', offset = '0' } = request.query as Record<string, string>;
+
+    const conditions = [
+      eq(appointments.providerId, userId),
+    ];
+
+    if (status) {
+      conditions.push(eq(appointments.status, status as 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'));
+    }
+
+    const rows = await db
+      .select({
+        id: appointments.id,
+        patientId: appointments.patientId,
+        providerId: appointments.providerId,
+        facilityId: appointments.facilityId,
+        scheduledAt: appointments.scheduledAt,
+        durationMinutes: appointments.durationMinutes,
+        reason: appointments.reason,
+        status: appointments.status,
+        notes: appointments.notes,
+        createdAt: appointments.createdAt,
+        patientName: users.displayName,
+        patientPhone: users.phone,
+        facilityName: facilities.name,
+      })
+      .from(appointments)
+      .leftJoin(users, eq(appointments.patientId, users.id))
+      .leftJoin(facilities, eq(appointments.facilityId, facilities.id))
+      .where(and(...conditions))
+      .orderBy(desc(appointments.scheduledAt))
+      .limit(parseInt(limit, 10))
+      .offset(parseInt(offset, 10));
+
+    return { data: rows, pagination: { limit: parseInt(limit, 10), offset: parseInt(offset, 10), count: rows.length } };
+  });
+
   // GET /appointments/:id
   fastify.get('/appointments/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
