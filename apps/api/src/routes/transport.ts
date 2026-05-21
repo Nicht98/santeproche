@@ -3,6 +3,17 @@ import { query } from '../db/index.js';
 
 const OSRM_URL = process.env.OSRM_URL || 'http://osrm-routed:5000';
 
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 interface OsrmRouteResponse {
   routes?: Array<{
     distance: number;       // meters
@@ -88,24 +99,28 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
 
     try {
       const osrmUrl = `${OSRM_URL}/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`;
-      const osrmRes = await fetch(osrmUrl);
+      const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(3000) });
 
-      if (!osrmRes.ok) {
-        return reply.code(502).send({
-          error: { code: 'OSRM_ERROR', message: 'Routing service unavailable' },
-        });
+      let distanceMeters: number;
+      let durationSeconds: number;
+
+      if (osrmRes.ok) {
+        const osrmData = (await osrmRes.json()) as OsrmRouteResponse;
+        const route = osrmData.routes?.[0];
+        if (route) {
+          distanceMeters = route.distance;
+          durationSeconds = route.duration;
+        } else {
+          // Fallback to haversine
+          distanceMeters = haversine(fromLat, fromLng, toLat, toLng);
+          durationSeconds = (distanceMeters / 1000 / 40) * 3600; // ~40 km/h avg
+        }
+      } else {
+        // OSRM unavailable — use haversine estimate
+        distanceMeters = haversine(fromLat, fromLng, toLat, toLng);
+        durationSeconds = (distanceMeters / 1000 / 40) * 3600;
       }
 
-      const osrmData = (await osrmRes.json()) as OsrmRouteResponse;
-      const route = osrmData.routes?.[0];
-      if (!route) {
-        return reply.code(404).send({
-          error: { code: 'NO_ROUTE', message: 'No route found between locations' },
-        });
-      }
-
-      const distanceMeters = route.distance;
-      const durationSeconds = route.duration;
       const options = estimateTransportCost(distanceMeters, mode);
 
       return {
@@ -121,9 +136,21 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
         })),
       };
     } catch (_err) {
-      return reply.code(502).send({
-        error: { code: 'ROUTING_FAILED', message: 'Could not calculate route' },
-      });
+      // OSRM error — haversine fallback
+      const distanceMeters = haversine(fromLat, fromLng, toLat, toLng);
+      const options = estimateTransportCost(distanceMeters, mode);
+      return {
+        status: 'success',
+        route: {
+          distanceKm: Number((distanceMeters / 1000).toFixed(2)),
+          durationMin: Math.round((distanceMeters / 1000 / 40) * 60),
+        },
+        options: options.map((o) => ({
+          ...o,
+          costXaf: o.costXaf,
+          durationMin: o.durationMin,
+        })),
+      };
     }
   });
 
@@ -149,7 +176,11 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
       FROM facilities
       WHERE is_active = true AND deleted_at IS NULL
         ${kind ? "AND kind = '" + kind + "'" : ''}
-      HAVING distance_km <= $3
+        AND (${R} * acos(LEAST(1, GREATEST(-1,
+          cos(radians($1)) * cos(radians(lat::float)) *
+          cos(radians(lng::float) - radians($2)) +
+          sin(radians($1)) * sin(radians(lat::float))
+        )))) <= $3
       ORDER BY distance_km
       LIMIT $4`,
       [parseFloat(fromLat), parseFloat(fromLng), parseFloat(radiusKm), parseInt(limit, 10)]
