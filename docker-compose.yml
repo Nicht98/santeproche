@@ -38,10 +38,8 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - JWT_SECRET=${JWT_SECRET:-changeme-in-production}
-      - OSRM_URL=http://osrm-routed:5000
-      - NOMINATIM_URL=http://nominatim:8080
-      - KANNEL_URL=http://kannel:13013
       - OTP_SECRET=${OTP_SECRET:-changeme}
+      - KANNEL_URL=http://kannel:13013
     depends_on:
       db:
         condition: service_healthy
@@ -83,6 +81,7 @@ services:
       POSTGRES_DB: santeproche
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sante -d santeproche"]
@@ -109,24 +108,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - minio_data:/data
-    restart: unless-stopped
-
-  nominatim:
-    image: mediagis/nominatim:4.4
-    environment:
-      PBF_URL: "https://download.geofabrik.de/africa/cameroon-latest.osm.pbf"
-      REPLICATION_URL: "https://download.geofabrik.de/africa/cameroon-updates/"
-    volumes:
-      - nominatim_data:/var/lib/postgresql/14/main
-    restart: unless-stopped
-
-  osrm-routed:
-    image: osrm/osrm-backend:latest
-    command: osrm-routed /data/cameroon.osrm --algorithm mld
-    expose:
-      - "5000"
-    volumes:
-      - osrm_data:/data
     restart: unless-stopped
 
   kannel:
@@ -158,8 +139,6 @@ volumes:
   pg_data:
   redis_data:
   minio_data:
-  nominatim_data:
-  osrm_data:
   kannel_data:
   prometheus_data:
   grafana_data:
