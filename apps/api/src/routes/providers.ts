@@ -23,20 +23,4 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
     const facility = facilityResult[0];
     return reply.code(201).send(facility);
   });
-
-  // POST /facilities/:id/stock
-  fastify.post('/facilities/:id/stock', { preHandler: [fastify.authenticate] }, async (request, _reply) => {
-    const { id } = request.params as { id: string };
-    const { drugId, status, quantity, notes } = request.body as any;
-
-    const [stock] = await query(
-      `INSERT INTO facility_stock (facility_id, drug_id, status, quantity, notes, updated_by, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       ON CONFLICT (facility_id, drug_id)
-       DO UPDATE SET status = $3, quantity = $4, notes = $5, updated_by = $6, updated_at = NOW()
-       RETURNING *`,
-      [id, drugId, status, quantity, notes, (request.user as { id: string }).id]
-    );
-    return stock;
-  });
 };
