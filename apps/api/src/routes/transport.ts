@@ -225,10 +225,11 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
             options: options,
           };
         } catch (_err) {
+          const dkm = Number(f.distance_km);
           return {
             facility: { id: f.id, name: f.name, kind: f.kind, address: f.address, phone: f.phone, lat: f.lat, lng: f.lng, is24h: f.is_24h, hasEmergency: f.has_emergency },
-            distanceKm: Number(f.distance_km),
-            options: [],
+            distanceKm: dkm,
+            options: estimateTransportCost(dkm * 1000, 'all').slice(0, 3),
           };
         }
       })
