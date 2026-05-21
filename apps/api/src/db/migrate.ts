@@ -72,3 +72,14 @@ export async function migrate(): Promise<MigrationResult> {
   console.log(`[MIGRATE] Done. Applied: ${result.applied.length}, Skipped: ${result.skipped.length}, Errors: ${result.errors.length}`);
   return result;
 }
+
+// Auto-run when executed directly (node dist/db/migrate.js)
+/* c8 ignore next 6 */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  migrate().then((result) => {
+    if (result.errors.length > 0) {
+      console.error(`[MIGRATE] ${result.errors.length} error(s) occurred. Exiting with code 1.`);
+      process.exit(1);
+    }
+  });
+}
