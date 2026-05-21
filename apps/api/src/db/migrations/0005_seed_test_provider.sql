@@ -1,4 +1,4 @@
--- Migration 0004: Seed a test provider for end-to-end booking tests
+-- Migration 0005: Seed a test provider for end-to-end booking tests
 
 -- Test provider: Dr. Amadou Biya at Hopital Général de Douala
 INSERT INTO users (id, phone, phone_verified, role, status, display_name, email, preferred_lang, created_at, updated_at)
