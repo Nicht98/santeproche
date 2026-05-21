@@ -3,38 +3,169 @@ import { query } from '../db/index.js';
 import { redis } from '../infra/redis.js';
 
 export const chatRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /conversations
+  // GET /conversations — list my conversations
   fastify.get('/conversations', { preHandler: [fastify.authenticate] }, async (request) => {
-    const userId = (request.user as { id: string }).id;
+    const userId = request.user.id;
+    const { limit = '20', offset = '0' } = request.query as Record<string, string>;
+
     const convs = await query(`
-      SELECT c.*, u.display_name as other_party_name
+      SELECT c.*,
+        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as other_party_name,
+        CASE WHEN c.patient_id = $1 THEN u.phone ELSE p.phone END as other_party_phone
       FROM conversations c
-      JOIN users u ON u.id = CASE WHEN c.patient_id = $1 THEN c.provider_id ELSE c.patient_id END
+      JOIN users u ON u.id = c.provider_id
+      JOIN users p ON p.id = c.patient_id
       WHERE c.patient_id = $1 OR c.provider_id = $1
       ORDER BY c.last_message_at DESC NULLS LAST
-    `, [userId]);
-    return { data: convs };
+      LIMIT $2 OFFSET $3
+    `, [userId, parseInt(limit, 10), parseInt(offset, 10)]);
+
+    return { data: convs, pagination: { limit: parseInt(limit, 10), offset: parseInt(offset, 10), count: convs.length } };
   });
 
-  // POST /conversations/:id/messages
-  fastify.post('/conversations/:id/messages', { preHandler: [fastify.authenticate] }, async (request, _reply) => {
+  // POST /conversations — start a new conversation
+  fastify.post('/conversations', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { providerId, facilityId, subject } = request.body as {
+      providerId: string;
+      facilityId?: string;
+      subject?: string;
+    };
+    const patientId = request.user.id;
+
+    // Prevent starting conversation with self
+    if (providerId === patientId) {
+      return reply.code(400).send({ error: { code: 'SELF_CONVERSATION', message: 'Cannot start a conversation with yourself' } });
+    }
+
+    const [existing] = await query(
+      `SELECT id FROM conversations WHERE patient_id = $1 AND provider_id = $2 LIMIT 1`,
+      [patientId, providerId]
+    );
+
+    if (existing) {
+      return reply.code(409).send({ error: { code: 'CONVERSATION_EXISTS', message: 'Conversation already exists', conversationId: existing.id } });
+    }
+
+    const [conv] = await query(
+      `INSERT INTO conversations (patient_id, provider_id, facility_id, subject)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [patientId, providerId, facilityId || null, subject || null]
+    );
+
+    return reply.code(201).send({ status: 'success', conversation: conv });
+  });
+
+  // GET /conversations/:id — get conversation details
+  fastify.get('/conversations/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.user.id;
+
+    const [conv] = await query(
+      `SELECT c.*,
+        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as other_party_name
+      FROM conversations c
+      JOIN users u ON u.id = c.provider_id
+      JOIN users p ON p.id = c.patient_id
+      WHERE c.id = $1 AND (c.patient_id = $2 OR c.provider_id = $2)
+      LIMIT 1`,
+      [userId, id]
+    );
+
+    if (!conv) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Conversation not found' } });
+    }
+
+    return { data: conv };
+  });
+
+  // GET /conversations/:id/messages — list messages in a conversation
+  fastify.get('/conversations/:id/messages', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.user.id;
+    const { limit = '50', offset = '0' } = request.query as Record<string, string>;
+
+    // Verify access
+    const [conv] = await query(
+      'SELECT patient_id, provider_id FROM conversations WHERE id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (!conv || (conv.patient_id !== userId && conv.provider_id !== userId)) {
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to view this conversation' } });
+    }
+
+    const messages = await query(
+      `SELECT m.*, u.display_name as sender_name, u.role as sender_role
+       FROM messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.conversation_id = $1
+       ORDER BY m.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [id, parseInt(limit, 10), parseInt(offset, 10)]
+    );
+
+    // Mark messages as read for this user
+    const isPatient = conv.patient_id === userId;
+    await query(
+      `UPDATE conversations SET ${isPatient ? 'patient_unread_count' : 'provider_unread_count'} = 0 WHERE id = $1`,
+      [id]
+    );
+
+    return { data: messages.reverse(), pagination: { limit: parseInt(limit, 10), offset: parseInt(offset, 10), count: messages.length } };
+  });
+
+  // POST /conversations/:id/messages — send a message
+  fastify.post('/conversations/:id/messages', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { content, type = 'text' } = request.body as { content: string; type?: string };
-    const userId = (request.user as { id: string }).id;
+    const userId = request.user.id;
+
+    // Verify access
+    const [conv] = await query(
+      'SELECT patient_id, provider_id FROM conversations WHERE id = $1 LIMIT 1',
+      [id]
+    );
+
+    if (!conv || (conv.patient_id !== userId && conv.provider_id !== userId)) {
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to send messages in this conversation' } });
+    }
 
     const [message] = await query(
       'INSERT INTO messages (conversation_id, sender_id, type, content) VALUES ($1, $2, $3, $4) RETURNING *',
       [id, userId, type, content]
     );
 
+    // Update last message time and unread count
+    const isPatient = conv.patient_id === userId;
     await query(
-      'UPDATE conversations SET last_message_at = NOW(), provider_unread_count = provider_unread_count + 1 WHERE id = $1',
+      `UPDATE conversations SET last_message_at = NOW(),
+       ${isPatient ? 'provider_unread_count' : 'patient_unread_count'} = ${isPatient ? 'provider_unread_count' : 'patient_unread_count'} + 1,
+       updated_at = NOW()
+       WHERE id = $1`,
       [id]
     );
 
     // Publish to Redis for WebSocket broadcast
-    await redis.publish(`chat:${id}`, JSON.stringify(message));
+    await redis.publish(`chat:${id}`, JSON.stringify({ ...message, senderId: userId }));
 
-    return message;
+    return reply.code(201).send({ status: 'success', message });
+  });
+
+  // GET /conversations/unread-count — total unread messages for current user
+  fastify.get('/conversations/unread-count', { preHandler: [fastify.authenticate] }, async (request) => {
+    const userId = request.user.id;
+
+    const [result] = await query(
+      `SELECT COALESCE(SUM(patient_unread_count), 0) as patient_unread,
+              COALESCE(SUM(provider_unread_count), 0) as provider_unread
+       FROM conversations WHERE patient_id = $1 OR provider_id = $1`,
+      [userId]
+    ) as Array<{ patient_unread: string; provider_unread: string }>;
+
+    return {
+      totalUnread: parseInt(result.patient_unread, 10) + parseInt(result.provider_unread, 10),
+      patientUnread: parseInt(result.patient_unread, 10),
+      providerUnread: parseInt(result.provider_unread, 10),
+    };
   });
 };
