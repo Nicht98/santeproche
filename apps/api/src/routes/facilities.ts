@@ -55,8 +55,8 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
           WHEN ${facilities.is24h} = true THEN true
           WHEN ${facilities.openingHours} IS NULL THEN false
           WHEN (${facilities.openingHours}->${currentDay}) IS NULL THEN false
-          WHEN (${facilities.openingHours}->>${currentDay}->>'open') IS NULL THEN false
-          WHEN (${facilities.openingHours}->>${currentDay}->>'close') IS NULL THEN false
+          WHEN (${facilities.openingHours}->${currentDay}->>'open') IS NULL THEN false
+          WHEN (${facilities.openingHours}->${currentDay}->>'close') IS NULL THEN false
           ELSE
             ((${facilities.openingHours}->${currentDay}->>'open')::time <= ${currentTime}::time
             AND (${facilities.openingHours}->${currentDay}->>'close')::time >= ${currentTime}::time)
