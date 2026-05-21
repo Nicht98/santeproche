@@ -31,6 +31,14 @@ const fastify = Fastify({
   },
 });
 
+// Simple in-memory metrics for /metrics endpoint
+const metrics = {
+  httpRequestsTotal: 0,
+  httpRequestDurationSum: 0,
+  httpRequestDurationCount: 0,
+  startTime: Date.now(),
+};
+
 // Decorate fastify with authenticate
 fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
   try {
@@ -38,6 +46,13 @@ fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyR
   } catch (err) {
     reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } });
   }
+});
+
+// Metrics hook: count every request
+fastify.addHook('onResponse', async (_request, reply) => {
+  metrics.httpRequestsTotal++;
+  metrics.httpRequestDurationSum += reply.elapsedTime;
+  metrics.httpRequestDurationCount++;
 });
 
 // Register plugins
@@ -56,6 +71,27 @@ fastify.get('/ready', async () => {
   await query('SELECT 1');
   await redis.ping();
   return { status: 'ready' };
+});
+
+// Metrics endpoint (Prometheus-compatible text format)
+fastify.get('/metrics', async () => {
+  const uptimeSeconds = (Date.now() - metrics.startTime) / 1000;
+  const avgDuration = metrics.httpRequestDurationCount > 0
+    ? metrics.httpRequestDurationSum / metrics.httpRequestDurationCount
+    : 0;
+  return [
+    '# HELP http_requests_total Total number of HTTP requests',
+    '# TYPE http_requests_total counter',
+    `http_requests_total ${metrics.httpRequestsTotal}`,
+    '',
+    '# HELP http_request_duration_seconds Average request duration',
+    '# TYPE http_request_duration_seconds gauge',
+    `http_request_duration_seconds ${avgDuration.toFixed(6)}`,
+    '',
+    '# HELP uptime_seconds Process uptime',
+    '# TYPE uptime_seconds gauge',
+    `uptime_seconds ${uptimeSeconds.toFixed(3)}`,
+  ].join('\n');
 });
 
 // Register routes
