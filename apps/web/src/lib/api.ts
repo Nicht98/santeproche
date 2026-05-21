@@ -195,12 +195,14 @@ export const appointments = {
     api<{ data: AppointmentsByDay[] }>('/appointments/provider'),
   get: (id: string) =>
     api<{ data: Appointment }>(`/appointments/${id}`),
+  availableSlots: (providerId: string, date: string) =>
+    api<{ date: string; dayOfWeek: string; slots: { time: string; available: boolean }[] }>(`/appointments/available-slots?providerId=${providerId}&date=${date}`),
   updateStatus: (id: string, body: UpdateStatusBody) =>
-    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
+    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   cancel: (id: string, reason?: string) =>
-    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) }),
   reschedule: (id: string, body: RescheduleBody) =>
-    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(body) }),
+    api<{ status: string; message: string; data: Appointment }>(`/appointments/${id}`, { method: 'PATCH', body: JSON.stringify({ newScheduledAt: body.newScheduledAt, rescheduleReason: body.reason }) }),
 };
 
 /* ---------- Chat ---------- */

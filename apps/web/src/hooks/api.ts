@@ -104,6 +104,14 @@ export function useUpdateAppointmentStatus() {
   });
 }
 
+export function useAvailableSlots(providerId: string, date: string) {
+  return useQuery({
+    queryKey: ['slots', providerId, date],
+    queryFn: () => appointments.availableSlots(providerId, date),
+    enabled: !!providerId && !!date,
+  });
+}
+
 /* ---------- Chat ---------- */
 export function useConversations() {
   return useQuery({
