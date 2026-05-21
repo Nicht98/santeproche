@@ -1,3 +1,4 @@
+# Force cache invalidation: 2026-05-21-2
 FROM node:20-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm
