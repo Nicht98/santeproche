@@ -6,8 +6,8 @@ services:
     build:
       context: .
       dockerfile: ./infra/nginx/Dockerfile
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       api:
         condition: service_healthy
