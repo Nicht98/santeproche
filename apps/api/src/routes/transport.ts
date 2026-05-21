@@ -33,9 +33,9 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   const results = [];
 
   if (mode === 'all' || mode === 'taxi') {
-    // Motorcycle taxi in Cameroon: roughly 150-300 XAF/km in cities
+    // Motorcycle taxi in Cameroon: roughly 150-300 XAF/km in cities, ~24 km/h
     const motoCost = Math.round(distanceKm * 200);
-    const motoDur = Math.round((distanceMeters / 1000) / 0.4 * 60); // ~24 km/h avg
+    const motoDur = Math.round(distanceKm / 24 * 60); // 24 km/h avg
     results.push({
       mode: 'mototaxi',
       costXaf: Math.max(200, motoCost),
@@ -45,9 +45,9 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   }
 
   if (mode === 'all' || mode === 'bus') {
-    // Bus: very cheap, fixed routes, slower
+    // Bus: very cheap, fixed routes, slower ~12 km/h
     const busCost = Math.max(150, Math.round(distanceKm * 50));
-    const busDur = Math.round((distanceMeters / 1000) / 0.2 * 60); // ~12 km/h avg with stops
+    const busDur = Math.round(distanceKm / 12 * 60);
     results.push({
       mode: 'bus',
       costXaf: busCost,
@@ -57,9 +57,9 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   }
 
   if (mode === 'all' || mode === 'car') {
-    // Car taxi / ride-hail
+    // Car taxi / ride-hail ~18 km/h
     const carCost = Math.max(500, Math.round(distanceKm * 300));
-    const carDur = Math.round((distanceMeters / 1000) / 0.3 * 60); // ~18 km/h avg
+    const carDur = Math.round(distanceKm / 18 * 60);
     results.push({
       mode: 'car',
       costXaf: carCost,
@@ -69,7 +69,7 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   }
 
   if (mode === 'all' || mode === 'walk') {
-    const walkDur = Math.round((distanceMeters / 1000) / 0.005 * 60); // ~5 km/h
+    const walkDur = Math.round(distanceKm / 5 * 60); // ~5 km/h
     if (walkDur <= 60) { // Only if under 1 hour
       results.push({
         mode: 'walk',
@@ -191,17 +191,22 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
       facilitiesList.map(async (f: Record<string, any>) => {
         try {
           const osrmUrl = `${OSRM_URL}/route/v1/driving/${fromLng},${fromLat};${f.lng},${f.lat}?overview=false`;
-          const osrmRes = await fetch(osrmUrl);
+          const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(2000) });
 
-          let route = null;
+          let distanceKmHaversine = Number(f.distance_km);
           let options: any[] = [];
 
           if (osrmRes.ok) {
             const osrmData = (await osrmRes.json()) as OsrmRouteResponse;
-            route = osrmData.routes?.[0];
+            const route = osrmData.routes?.[0];
             if (route) {
-              options = estimateTransportCost(route.distance, 'all');
+              options = estimateTransportCost(route.distance, 'all').slice(0, 3);
+            } else {
+              options = estimateTransportCost(distanceKmHaversine * 1000, 'all').slice(0, 3);
             }
+          } else {
+            // OSRM down — use haversine distance
+            options = estimateTransportCost(distanceKmHaversine * 1000, 'all').slice(0, 3);
           }
 
           return {
@@ -216,20 +221,13 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
               is24h: f.is_24h,
               hasEmergency: f.has_emergency,
             },
-            distanceKm: f.distance_km,
-            route: route
-              ? {
-                  distanceKm: Number((route.distance / 1000).toFixed(2)),
-                  durationMin: Math.round(route.duration / 60),
-                }
-              : null,
-            options: options.slice(0, 3), // Top 3 modes
+            distanceKm: distanceKmHaversine,
+            options: options,
           };
         } catch (_err) {
           return {
             facility: { id: f.id, name: f.name, kind: f.kind, address: f.address, phone: f.phone, lat: f.lat, lng: f.lng, is24h: f.is_24h, hasEmergency: f.has_emergency },
-            distanceKm: f.distance_km,
-            route: null,
+            distanceKm: Number(f.distance_km),
             options: [],
           };
         }

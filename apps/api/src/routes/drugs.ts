@@ -66,7 +66,11 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
         FROM drug_stock ds
         JOIN facilities f ON f.id = ds.facility_id
         WHERE ds.drug_id = $3 AND ds.is_in_stock = TRUE AND ds.is_available = TRUE
-        HAVING distance_km <= $4
+          AND (${R} * acos(LEAST(1, GREATEST(-1,
+            cos(radians($1)) * cos(radians(f.lat::float)) *
+            cos(radians(f.lng::float) - radians($2)) +
+            sin(radians($1)) * sin(radians(f.lat::float))
+          )))) <= $4
         ORDER BY distance_km ASC`,
         [parseFloat(lat), parseFloat(lng), id, parseFloat(radiusKm)]
       );
