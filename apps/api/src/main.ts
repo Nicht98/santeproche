@@ -12,6 +12,7 @@ import { chatRoutes } from './routes/chat.js';
 import { bookingRoutes } from './routes/booking.js';
 import { providerRoutes } from './routes/providers.js';
 import { patientRoutes } from './routes/patients.js';
+import { adminRoutes } from './routes/admin.js';
 
 // Validate critical env vars FIRST (before Fastify)
 const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
@@ -64,6 +65,7 @@ await fastify.register(chatRoutes, { prefix: '/api/v1' });
 await fastify.register(bookingRoutes, { prefix: '/api/v1' });
 await fastify.register(providerRoutes, { prefix: '/api/v1' });
 await fastify.register(patientRoutes, { prefix: '/api/v1' });
+await fastify.register(adminRoutes, { prefix: '/api/v1' });
 
 // Error handler
 fastify.setErrorHandler((err, _req, reply) => {
