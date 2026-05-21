@@ -87,21 +87,14 @@ services:
     restart: unless-stopped
 
   osrm-routed:
-    image: osrm/osrm-backend:latest
-    command: >
-      bash -c "
-        if [ ! -f /data/cameroon.osrm ]; then
-          echo 'Downloading Cameroon OSM data...';
-          wget -q -O /data/cameroon.osm.pbf https://download.geofabrik.de/africa/cameroon-latest.osm.pbf;
-          echo 'Extracting OSRM data...';
-          osrm-extract -p /opt/car.lua /data/cameroon.osm.pbf;
-          osrm-partition /data/cameroon.osrm;
-          osrm-customize /data/cameroon.osrm;
-          rm /data/cameroon.osm.pbf;
-        fi;
-        echo 'Starting OSRM server...';
-        osrm-routed --algorithm mld /data/cameroon.osrm
-      "
+    build:
+      context: .
+      dockerfile: ./infra/osrm/Dockerfile
+    environment:
+      - OSRM_REGION=cameroon
+      - OSRM_OSM_URL=https://download.geofabrik.de/africa/cameroon-latest.osm.pbf
+      - OSRM_PROFILE=/opt/car.lua
+      - OSRM_DATA_DIR=/data
     volumes:
       - osrm_data:/data
     restart: unless-stopped
