@@ -1,4 +1,7 @@
 services:
+  # ===========================================
+  #   BACKEND API
+  # ===========================================
   api:
     build:
       context: .
@@ -13,6 +16,7 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - JWT_SECRET=${JWT_SECRET:-changeme-in-production}
+      - OTP_SECRET=${OTP_SECRET:-changeme}
       - OSRM_URL=http://osrm-routed:5000
       - NOMINATIM_URL=http://nominatim:8080
       - KANNEL_URL=http://kannel:13013
@@ -31,16 +35,9 @@ services:
       retries: 3
       start_period: 10s
 
-  web:
-    build:
-      context: .
-      dockerfile: ./apps/web/Dockerfile
-    ports:
-      - "5173:80"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-
+  # ===========================================
+  #   INFRASTRUCTURE
+  # ===========================================
   db:
     image: postgis/postgis:15-3.4
     environment:
@@ -73,6 +70,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    expose:
+      - "9000"
     volumes:
       - minio_data:/data
     restart: unless-stopped
@@ -82,6 +81,8 @@ services:
     environment:
       PBF_URL: "https://download.geofabrik.de/africa/cameroon-latest.osm.pbf"
       REPLICATION_URL: "https://download.geofabrik.de/africa/cameroon-updates/"
+    expose:
+      - "8080"
     volumes:
       - nominatim_data:/var/lib/postgresql/14/main
     restart: unless-stopped
@@ -101,10 +102,14 @@ services:
       dockerfile: ./infra/kannel/Dockerfile
     environment:
       KANNEL_ADMIN_PASSWORD: ${KANNEL_ADMIN_PASSWORD:-admin-secret}
+    expose:
+      - "13013"
     restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
+    expose:
+      - "9090"
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -112,6 +117,8 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    expose:
+      - "3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-grafana-secret}
     volumes:
