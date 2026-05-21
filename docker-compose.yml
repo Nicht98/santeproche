@@ -1,17 +1,165 @@
 services:
   # ===========================================
-  #   FRONTEND ONLY — SPA served via Nginx
-  #   Build with VITE_API_URL pointing at deployed backend
-  #   No host port binding — exposed internally for proxy
+  #   REVERSE PROXY — routes /api → backend, / → frontend
+  # ===========================================
+  nginx:
+    build:
+      context: .
+      dockerfile: ./infra/nginx/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ===========================================
+  #   BACKEND API
+  # ===========================================
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://sante:${DB_PASSWORD:-secret}@db:5432/santeproche
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - JWT_SECRET=${JWT_SECRET:-changeme-in-production}
+      - OSRM_URL=http://osrm-routed:5000
+      - NOMINATIM_URL=http://nominatim:8080
+      - KANNEL_URL=http://kannel:13013
+      - OTP_SECRET=${OTP_SECRET:-changeme}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================
+  #   FRONTEND SPA
   # ===========================================
   web:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     expose:
       - "80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+
+  # ===========================================
+  #   INFRASTRUCTURE
+  # ===========================================
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: sante
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: santeproche
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sante -d santeproche"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  nominatim:
+    image: mediagis/nominatim:4.4
+    environment:
+      PBF_URL: "https://download.geofabrik.de/africa/cameroon-latest.osm.pbf"
+      REPLICATION_URL: "https://download.geofabrik.de/africa/cameroon-updates/"
+    volumes:
+      - nominatim_data:/var/lib/postgresql/14/main
+    restart: unless-stopped
+
+  osrm-routed:
+    image: gisops/door2door-osrm-backend:v5.27.1
+    command: osrm-routed /data/cameroon.osrm --algorithm mld
+    expose:
+      - "5000"
+    volumes:
+      - osrm_data:/data
+    restart: unless-stopped
+
+  kannel:
+    build:
+      context: .
+      dockerfile: ./infra/kannel/Dockerfile
+    environment:
+      KANNEL_ADMIN_PASSWORD: ${KANNEL_ADMIN_PASSWORD:-admin-secret}
+    volumes:
+      - kannel_data:/var/log/kannel
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-grafana-secret}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:
+  nominatim_data:
+  osrm_data:
+  kannel_data:
+  prometheus_data:
+  grafana_data:
