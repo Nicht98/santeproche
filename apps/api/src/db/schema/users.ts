@@ -49,7 +49,7 @@ export const providerProfiles = pgTable('provider_profiles', {
   userId: uuid('user_id')
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
-  facilityId: uuid('facility_id').references(() => facilities.id, { onDelete: 'set null' }),
+  facilityId: uuid('facility_id'),
   jobTitle: varchar('job_title', { length: 100 }),
   licenseNumber: varchar('license_number', { length: 100 }),
   licenseDocUrl: text('license_doc_url'),
