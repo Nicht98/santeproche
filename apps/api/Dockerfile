@@ -1,5 +1,5 @@
-# Force cache invalidation: 2026-05-21-2
 FROM node:20-alpine AS builder
+ARG CACHE_BUST=2
 WORKDIR /app
 RUN npm install -g pnpm
 
@@ -28,4 +28,4 @@ COPY --from=builder /app/apps/api/startup.sh ./startup.sh
 RUN npm install --omit=dev --ignore-scripts
 RUN chmod +x ./startup.sh
 EXPOSE 3000
-CMD ["./startup.sh"]
+# Cache-bust: 2026-05-21T21:56:46+02:00

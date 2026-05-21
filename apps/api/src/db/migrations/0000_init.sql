@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS patient_profiles (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS provider_profiles (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    facility_id UUID REFERENCES facilities(id) ON DELETE SET NULL,
+    facility_id UUID,
     job_title VARCHAR(100),
     license_number VARCHAR(100),
     license_doc_url TEXT,
