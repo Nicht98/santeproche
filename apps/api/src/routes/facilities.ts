@@ -144,6 +144,24 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
+  // GET /facilities/nearby — legacy compatible endpoint
+  // Must be registered BEFORE /facilities/:id to avoid shadowing
+  fastify.get('/facilities/nearby', async (request, reply) => {
+    const { latitude, longitude, radius, limit: nearbyLimit } = request.query as Record<string, string>;
+
+    if (!latitude || !longitude) {
+      return reply.code(400).send({ error: { code: 'MISSING_PARAMS', message: 'latitude and longitude required' } });
+    }
+
+    // Redirect to the unified /facilities endpoint with query params
+    const params = new URLSearchParams();
+    params.set('lat', latitude);
+    params.set('lng', longitude);
+    params.set('radiusKm', radius || '10');
+    params.set('limit', nearbyLimit || '20');
+    return reply.redirect(`/api/v1/facilities?${params.toString()}`);
+  });
+
   // GET /facilities/:id
   fastify.get('/facilities/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
