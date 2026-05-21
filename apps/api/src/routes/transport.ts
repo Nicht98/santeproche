@@ -35,7 +35,7 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   if (mode === 'all' || mode === 'taxi') {
     // Motorcycle taxi in Cameroon: roughly 150-300 XAF/km in cities, ~24 km/h
     const motoCost = Math.round(distanceKm * 200);
-    const motoDur = Math.round(distanceKm / 24 * 60); // 24 km/h avg
+    const motoDur = Math.max(1, Math.round(distanceKm / 24 * 60)); // 24 km/h avg, min 1 min
     results.push({
       mode: 'mototaxi',
       costXaf: Math.max(200, motoCost),
@@ -47,7 +47,7 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   if (mode === 'all' || mode === 'bus') {
     // Bus: very cheap, fixed routes, slower ~12 km/h
     const busCost = Math.max(150, Math.round(distanceKm * 50));
-    const busDur = Math.round(distanceKm / 12 * 60);
+    const busDur = Math.max(1, Math.round(distanceKm / 12 * 60));
     results.push({
       mode: 'bus',
       costXaf: busCost,
@@ -59,7 +59,7 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   if (mode === 'all' || mode === 'car') {
     // Car taxi / ride-hail ~18 km/h
     const carCost = Math.max(500, Math.round(distanceKm * 300));
-    const carDur = Math.round(distanceKm / 18 * 60);
+    const carDur = Math.max(1, Math.round(distanceKm / 18 * 60));
     results.push({
       mode: 'car',
       costXaf: carCost,
@@ -69,7 +69,7 @@ function estimateTransportCost(distanceMeters: number, mode: string): {
   }
 
   if (mode === 'all' || mode === 'walk') {
-    const walkDur = Math.round(distanceKm / 5 * 60); // ~5 km/h
+    const walkDur = Math.max(1, Math.round(distanceKm / 5 * 60)); // ~5 km/h, min 1 min
     if (walkDur <= 60) { // Only if under 1 hour
       results.push({
         mode: 'walk',
