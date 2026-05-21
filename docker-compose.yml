@@ -88,6 +88,9 @@ services:
 
   osrm-routed:
     image: osrm/osrm-backend:latest
+    command: osrm-routed /data/cameroon.osrm --algorithm mld
+    expose:
+      - "5000"
     volumes:
       - osrm_data:/data
     restart: unless-stopped
