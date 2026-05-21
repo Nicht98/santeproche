@@ -316,4 +316,56 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
 
     return { status: 'success', appointment: updated };
   });
+
+  // POST /appointments/:id/cancel — explicit cancellation with reason
+  fastify.post('/appointments/:id/cancel', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const userId = request.user.id;
+    const { reason } = request.body as { reason?: string };
+
+    const [appt] = await db
+      .select()
+      .from(appointments)
+      .where(eq(appointments.id, id))
+      .limit(1);
+
+    if (!appt) {
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Appointment not found' } });
+    }
+
+    if (appt.status === 'cancelled') {
+      return reply.code(409).send({ error: { code: 'ALREADY_CANCELLED', message: 'Appointment is already cancelled' } });
+    }
+
+    const isPatient = appt.patientId === userId;
+    const isProvider = appt.providerId === userId;
+
+    if (!isPatient && !isProvider) {
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to cancel this appointment' } });
+    }
+
+    // Cancellation policy: must be at least 2 hours before scheduled time
+    const hoursUntil = (new Date(appt.scheduledAt).getTime() - Date.now()) / 3600000;
+    if (hoursUntil < 2) {
+      return reply.code(409).send({ error: { code: 'TOO_LATE', message: 'Appointments can only be cancelled at least 2 hours in advance' } });
+    }
+
+    const [updated] = await db
+      .update(appointments)
+      .set({
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledBy: userId,
+        notes: reason ? `${appt.notes || ''}\n[CANCEL REASON]: ${reason}`.trim() : appt.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(appointments.id, id))
+      .returning();
+
+    return {
+      status: 'success',
+      message: 'Appointment cancelled',
+      appointment: updated,
+    };
+  });
 };
