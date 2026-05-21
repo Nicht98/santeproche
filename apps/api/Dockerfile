@@ -28,4 +28,5 @@ COPY --from=builder /app/apps/api/startup.sh ./startup.sh
 RUN npm install --omit=dev --ignore-scripts
 RUN chmod +x ./startup.sh
 EXPOSE 3000
-# Cache-bust: 2026-05-21T21:56:46+02:00
+# Cache-bust: 2026-05-21-3
+CMD ["./startup.sh"]
