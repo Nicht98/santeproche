@@ -1,17 +1,24 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Phone, MapPin, CalendarPlus } from 'lucide-react';
 import { useProvider } from '../hooks/api';
+import { useAuthStore } from '../stores/auth';
 import { Card, LoadingScreen, ErrorBanner } from '../components/ui';
 
 export function ProviderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data, isLoading, error, refetch } = useProvider(id!);
 
   if (isLoading) return <LoadingScreen />;
   if (error || !data) return <div className="p-4"><ErrorBanner message={(error as Error)?.message} onRetry={refetch} /></div>;
 
   const p = data.data;
+
+  const handleBook = () => {
+    if (isAuthenticated) navigate(`/book?provider=${id}`);
+    else navigate('/login');
+  };
 
   return (
     <div className="space-y-3">
@@ -50,7 +57,7 @@ export function ProviderDetail() {
 
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => navigate(`/book?provider=${id}`)}
+            onClick={handleBook}
             className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white"
           >
             <CalendarPlus className="h-4 w-4" />

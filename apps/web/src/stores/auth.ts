@@ -7,10 +7,12 @@ export type AuthState = {
   refreshToken: string | null;
   isProfileComplete: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   setAuth: (payload: AuthResponse) => void;
   completeProfile: () => void;
   logout: () => void;
   hydrate: () => void;
+  loginAsGuest: () => void;
 };
 
 const stored = (() => {
@@ -21,21 +23,28 @@ const stored = (() => {
   return null;
 })();
 
+const isGuestStored = (() => {
+  try { return localStorage.getItem('auth_guest') === '1'; } catch { return false; }
+})();
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: stored?.user ?? null,
   accessToken: stored?.accessToken ?? null,
   refreshToken: stored?.refreshToken ?? null,
   isProfileComplete: stored?.isProfileComplete ?? false,
   isAuthenticated: !!stored?.accessToken,
+  isGuest: isGuestStored,
 
   setAuth: (payload) => {
     localStorage.setItem('auth', JSON.stringify(payload));
+    localStorage.removeItem('auth_guest');
     set({
       user: payload.user,
       accessToken: payload.accessToken,
       refreshToken: payload.refreshToken,
       isProfileComplete: payload.isProfileComplete,
       isAuthenticated: true,
+      isGuest: false,
     });
   },
 
@@ -54,7 +63,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem('auth');
-    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false });
+    localStorage.removeItem('auth_guest');
+    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false });
   },
+
   hydrate: () => {},
+
+  loginAsGuest: () => {
+    localStorage.setItem('auth_guest', '1');
+    set({ isGuest: true, isAuthenticated: false, user: null, accessToken: null, refreshToken: null, isProfileComplete: false });
+  },
 }));

@@ -1,18 +1,25 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Stethoscope, MapPin, MessageSquare, User } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAuth = useAuthStore((s) => s.isAuthenticated);
-  const isProfileComplete = useAuthStore((s) => s.isProfileComplete);
+  const isGuest = useAuthStore((s) => s.isGuest);
   const hideNav = location.pathname === '/login' || location.pathname.startsWith('/register');
 
-  if (!isAuth || !isProfileComplete) {
-    // Only allow /login and /register/patient without being fully onboarded
-    if (!hideNav && location.pathname !== '/') {
-      return <Outlet />;
-    }
+  // Only block nav if not authenticated AND not guest
+  const noNav = !isAuth && !isGuest;
+
+  // For guest mode, also block certain tabs (chat, profile, appointments, booking)
+  const isAuthRoute = ['/chat', '/profile', '/appointments', '/book'].some((p) =>
+    location.pathname.startsWith(p)
+  );
+
+  if (noNav && !hideNav && location.pathname !== '/') {
+    // If at a protected route without auth, still render outlet (login redirect handled by AuthOrGuest)
+    return <Outlet />;
   }
 
   return (
@@ -21,14 +28,14 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {!hideNav && (
+      {!hideNav && !isAuthRoute && (
         <nav className="fixed bottom-0 left-0 right-0 border-t bg-white">
           <div className="mx-auto flex max-w-lg justify-around py-1">
-            <NavItem icon={Home} label="Accueil" to="/" active={location.pathname === '/'} />
-            <NavItem icon={Stethoscope} label="Annuaire" to="/providers" active={location.pathname === '/providers' || location.pathname.startsWith('/provider/')} />
-            <NavItem icon={MapPin} label="Lieux" to="/facilities" active={location.pathname === '/facilities' || location.pathname.startsWith('/facility/')} />
-            <NavItem icon={MessageSquare} label="Chat" to="/chat" active={location.pathname === '/chat'} />
-            <NavItem icon={User} label="Profil" to="/profile" active={location.pathname === '/profile'} />
+            <NavItem icon={Home} label="Accueil" onClick={() => navigate('/')} active={location.pathname === '/'} />
+            <NavItem icon={Stethoscope} label="Annuaire" onClick={() => navigate('/providers')} active={location.pathname === '/providers' || location.pathname.startsWith('/provider/')} />
+            <NavItem icon={MapPin} label="Lieux" onClick={() => navigate('/facilities')} active={location.pathname === '/facilities' || location.pathname.startsWith('/facility/')} />
+            <NavItem icon={MessageSquare} label="Chat" onClick={() => navigate('/chat')} active={location.pathname === '/chat'} />
+            <NavItem icon={User} label="Profil" onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
           </div>
         </nav>
       )}
@@ -36,9 +43,10 @@ export function Layout() {
   );
 }
 
-function NavItem({ icon: Icon, label, to: _ignore, active }: { icon: typeof Home; label: string; to: string; active: boolean }) {
+function NavItem({ icon: Icon, label, onClick, active }: { icon: typeof Home; label: string; onClick: () => void; active: boolean }) {
   return (
     <button
+      onClick={onClick}
       className={`flex flex-col items-center gap-0.5 px-3 py-1.5 ${active ? 'text-brand-600' : 'text-gray-400'}`}
     >
       <Icon className="h-5 w-5" />

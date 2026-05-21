@@ -7,6 +7,7 @@ import { Card } from '../components/ui';
 export function Login() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const loginAsGuest = useAuthStore((s) => s.loginAsGuest);
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('+237');
   const [otp, setOtp] = useState('');
@@ -63,6 +64,24 @@ export function Login() {
             >
               {req.isPending ? 'Envoi…' : 'Recevoir un code'}
             </button>
+
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-400">ou</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { loginAsGuest(); navigate('/'); }}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Continuer sans compte
+            </button>
+
             {req.isError && (
               <p className="text-xs text-red-600">{(req.error as Error)?.message || 'Erreur'}</p>
             )}

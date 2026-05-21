@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight } from 'lucide-react';
+import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useFacilities, useProviders } from '../hooks/api';
+import { useAuthStore } from '../stores/auth';
 import { Card, LoadingScreen } from '../components/ui';
 
 export function Home() {
   const navigate = useNavigate();
+  const isGuest = useAuthStore((s) => s.isGuest);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [q, setQ] = useState('');
   const { data: facilities, isLoading: facLoading } = useFacilities({ limit: 5 });
   const { data: providers, isLoading: provLoading } = useProviders({ limit: 4 });
@@ -22,8 +25,20 @@ export function Home() {
     <div className="space-y-5">
       {/* Header + Search */}
       <div className="bg-brand-600 px-4 pb-6 pt-4">
-        <h1 className="text-xl font-bold text-white">SantéProche</h1>
-        <p className="text-sm text-brand-100">Trouvez des soins près de chez vous</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">SantéProche</h1>
+            <p className="text-sm text-brand-100">Trouvez des soins près de chez vous</p>
+          </div>
+          {isGuest && (
+            <button
+              onClick={() => navigate('/profile')}
+              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30"
+            >
+              <ShieldAlert className="h-5 w-5" />
+            </button>
+          )}
+        </div>
         <form
           onSubmit={(e) => { e.preventDefault(); if (q.trim()) navigate(`/search?q=${encodeURIComponent(q)}`); }}
           className="mt-3 flex rounded-xl bg-white p-1 shadow-sm"
@@ -40,6 +55,27 @@ export function Home() {
         </form>
       </div>
 
+      {/* Guest banner */}
+      {isGuest && (
+        <div className="px-4">
+          <Card className="flex items-center gap-3 bg-amber-50">
+            <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600" />
+            <div className="flex-1">
+              <p className="text-xs text-amber-800">
+                Vous naviguez en mode invité. Pour prendre rendez-vous ou accéder au chat,
+                <span className="font-semibold"> connectez-vous</span>.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+            >
+              Connexion
+            </button>
+          </Card>
+        </div>
+      )}
+
       {/* Quick actions */}
       <div className="grid grid-cols-3 gap-2 px-4">
         <button onClick={() => navigate('/providers')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
@@ -50,7 +86,7 @@ export function Home() {
           <MapPin className="h-6 w-6 text-brand-600" />
           <span className="text-xs font-medium text-gray-700">Pharmacies</span>
         </button>
-        <button onClick={() => navigate('/appointments')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
+        <button onClick={() => navigate(isAuthenticated ? '/appointments' : '/login')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
           <CalendarCheck className="h-6 w-6 text-brand-600" />
           <span className="text-xs font-medium text-gray-700">Rendez-vous</span>
         </button>
