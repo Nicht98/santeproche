@@ -66,6 +66,14 @@ export function useMyAppointments() {
   });
 }
 
+export function useAppointment(id: string) {
+  return useQuery({
+    queryKey: ['appointment', id],
+    queryFn: () => appointments.get(id),
+    enabled: !!id,
+  });
+}
+
 export function useProviderAppointments() {
   return useQuery({
     queryKey: ['appointments', 'provider'],

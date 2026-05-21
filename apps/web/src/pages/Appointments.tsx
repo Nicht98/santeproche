@@ -75,7 +75,11 @@ export function Appointments() {
           const date = new Date(apt.scheduledAt);
           const isPast = date < now;
           return (
-            <Card key={apt.id} className={`${isPast && apt.status === 'confirmed' ? 'opacity-60' : ''}`}>
+            <Card
+              key={apt.id}
+              className={`${isPast && apt.status === 'confirmed' ? 'opacity-60' : ''}`}
+              onClick={() => navigate(`/appointment/${apt.id}`)}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -97,7 +101,8 @@ export function Appointments() {
                 {['pending','confirmed'].includes(apt.status) && !isPast && (
                   <button
                     disabled={cancel.isPending}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (confirm('Annuler ce rendez-vous ?')) cancel.mutate({ id: apt.id });
                     }}
                     className="ml-2 rounded border px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"

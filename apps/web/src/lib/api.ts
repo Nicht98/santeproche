@@ -98,10 +98,25 @@ export interface Provider {
   phone: string;
   role: string;
   specialty: string | null;
+  jobTitle: string | null;
   bio: string | null;
   facilityId: string | null;
   facilityName: string | null;
+  facilityAddress: string | null;
+  facilityPhone: string | null;
+  facilityLat: number | null;
+  facilityLng: number | null;
   schedule?: Record<string, unknown[]>;
+  schedules?: Array<{
+    id: number;
+    providerId: string;
+    facilityId: string | null;
+    dayOfWeek: string;
+    startTime: string;
+    endTime: string;
+    slotDurationMin: number;
+    isActive: boolean;
+  }>;
 }
 export interface ProvidersQuery {
   role?: string;
@@ -159,9 +174,12 @@ export interface Appointment {
   providerId: string;
   facilityId?: string;
   scheduledAt: string;
+  durationMinutes?: number;
   status: AppointmentStatus;
   reason: string | null;
   notes: string | null;
+  providerName?: string | null;
+  facilityName?: string | null;
   rescheduleRequestedBy?: string | null;
   rescheduleRequestedAt?: string | null;
   rescheduleReason?: string | null;
@@ -181,6 +199,8 @@ export interface CreateAppointmentBody {
 export interface UpdateStatusBody {
   status: AppointmentStatus;
   notes?: string;
+  newScheduledAt?: string;
+  rescheduleReason?: string;
 }
 export interface RescheduleBody {
   newScheduledAt: string;

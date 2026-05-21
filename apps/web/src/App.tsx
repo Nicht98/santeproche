@@ -10,8 +10,10 @@ import { ProviderDetail } from './pages/ProviderDetail';
 import { Facilities } from './pages/Facilities';
 import { FacilityDetail } from './pages/FacilityDetail';
 import { Appointments } from './pages/Appointments';
+import { AppointmentDetail } from './pages/AppointmentDetail';
 import { Booking } from './pages/Booking';
 import { Chat } from './pages/Chat';
+import { SearchPage } from './pages/SearchPage';
 import { PatientRegister } from './pages/PatientRegister';
 import { Profile } from './pages/Profile';
 
@@ -60,8 +62,10 @@ function AuthGate() {
 
             {/* Protected routes (auth required) */}
             <Route path="/appointments" element={<AuthOrGuest><Appointments /></AuthOrGuest>} />
+            <Route path="/appointment/:id" element={<AuthOrGuest><AppointmentDetail /></AuthOrGuest>} />
             <Route path="/book" element={<AuthOrGuest><Booking /></AuthOrGuest>} />
             <Route path="/chat" element={<AuthOrGuest><Chat /></AuthOrGuest>} />
+            <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
             <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
