@@ -1,23 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Pill, Stethoscope, Search, ArrowRight } from 'lucide-react';
+import { MapPin, Pill, Stethoscope, Search, ArrowRight, Crosshair } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
+import { useLocationStore } from '../stores/location';
 import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { LocationBanner } from '../components/LocationBanner';
 
 export function Facilities() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
+  const [nearbyOnly, setNearbyOnly] = useState(false);
+  const { lat, lng } = useLocationStore();
+
+  const useGeo = nearbyOnly && lat && lng;
 
   const { data, isLoading, error } = useFacilities({
     search: search || undefined,
     type: type || undefined,
     limit: 20,
+    ...(useGeo ? { lat, lng, radiusKm: 10 } : {}),
   });
 
   if (isLoading) return <LoadingScreen />;
 
-  const iconMap: Record<string, typeof Pill> = { pharmacy: Pill, hospital: Stethoscope, clinic: Stethoscope };
+  const iconMap: Record<string, typeof Pill> = {
+    pharmacy: Pill,
+    hospital: Stethoscope,
+    clinic: Stethoscope,
+  };
 
   return (
     <div className="space-y-3 p-4">
@@ -25,6 +36,8 @@ export function Facilities() {
         <MapPin className="h-5 w-5 text-brand-600" />
         <h1 className="text-lg font-bold text-gray-900">Établissements</h1>
       </div>
+
+      <LocationBanner />
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -36,6 +49,18 @@ export function Facilities() {
             className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500"
           />
         </div>
+        <button
+          onClick={() => setNearbyOnly((v) => !v)}
+          className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold ${
+            nearbyOnly
+              ? 'bg-brand-600 text-white'
+              : 'border border-gray-300 bg-white text-gray-700'
+          }`}
+          title="Filtrer les établissements à proximité"
+        >
+          <Crosshair className="h-3.5 w-3.5" />
+          Proximité
+        </button>
       </div>
 
       <div className="flex gap-2 overflow-x-auto">
@@ -71,6 +96,11 @@ export function Facilities() {
                   <p className="text-xs text-gray-500">{f.city ?? f.address ?? 'Adresse inconnue'}</p>
                 </div>
                 {f.phone && <p className="text-[10px] text-gray-400">📞 {f.phone}</p>}
+                {f.distanceKm != null && (
+                  <span className="mt-0.5 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                    {Math.round(f.distanceKm * 10) / 10} km
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => navigate(`/facility/${f.id}`)}
@@ -81,7 +111,9 @@ export function Facilities() {
             </Card>
           );
         })}
-        {!data?.data?.length && <EmptyState icon={MapPin} title="Aucun établissement" subtitle="Essayez d'autres filtres" />}
+        {!data?.data?.length && (
+          <EmptyState icon={MapPin} title="Aucun établissement" subtitle="Essayez d'autres filtres ou activez la géolocalisation" />
+        )}
       </div>
     </div>
   );

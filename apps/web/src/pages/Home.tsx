@@ -3,19 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useFacilities, useProviders } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
+import { useLocationStore } from '../stores/location';
 import { Card, LoadingScreen } from '../components/ui';
-
+import { LocationBanner } from '../components/LocationBanner';
 export function Home() {
   const navigate = useNavigate();
   const isGuest = useAuthStore((s) => s.isGuest);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [q, setQ] = useState('');
-  const { data: facilities, isLoading: facLoading } = useFacilities({ limit: 5 });
-  const { data: providers, isLoading: provLoading } = useProviders({ limit: 4 });
+  const { lat, lng } = useLocationStore();
+
+  const { data: nearbyFacilities, isLoading: facLoading } = useFacilities({
+    limit: 5,
+    ...(lat && lng ? { lat, lng, radiusKm: 5 } : {}),
+  });
+  const { data: nearbyProviders, isLoading: provLoading } = useProviders({
+    limit: 4,
+    ...(lat && lng ? { lat, lng, radiusKm: 5 } : {}),
+  });
 
   if (facLoading || provLoading) return <LoadingScreen />;
 
-  const icons: Record<string, ReturnType<typeof useState>[0]> = {
+  const icons: Record<string, any> = {
     pharmacy: Pill,
     hospital: Stethoscope,
     clinic: Stethoscope,
@@ -54,6 +63,8 @@ export function Home() {
           </button>
         </form>
       </div>
+
+      <LocationBanner />
 
       {/* Guest banner */}
       {isGuest && (
@@ -95,11 +106,13 @@ export function Home() {
       {/* Nearby facilities */}
       <section className="px-4">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Pharmacies à proximité</h2>
+          <h2 className="text-sm font-semibold text-gray-900">
+            {lat && lng ? 'Pharmacies à proximité' : 'Pharmacies'}
+          </h2>
           <button onClick={() => navigate('/facilities')} className="text-xs text-brand-600">Voir tout</button>
         </div>
         <div className="space-y-2">
-          {facilities?.data?.slice(0, 5).map((f) => (
+          {nearbyFacilities?.data?.slice(0, 5).map((f) => (
             <Card key={f.id} className="flex items-start gap-3">
               <div className="mt-0.5 rounded-lg bg-brand-50 p-2">
                 {(() => {
@@ -124,18 +137,20 @@ export function Home() {
               </button>
             </Card>
           ))}
-          {(!facilities?.data?.length) && <p className="text-center text-xs text-gray-400">Aucune pharmacie trouvée.</p>}
+          {(!nearbyFacilities?.data?.length) && <p className="text-center text-xs text-gray-400">Aucune pharmacie trouvée.</p>}
         </div>
       </section>
 
       {/* Providers */}
       <section className="px-4 pb-6">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Professionnels de santé</h2>
+          <h2 className="text-sm font-semibold text-gray-900">
+            {lat && lng ? 'Professionnels à proximité' : 'Professionnels de santé'}
+          </h2>
           <button onClick={() => navigate('/providers')} className="text-xs text-brand-600">Voir tout</button>
         </div>
         <div className="space-y-2">
-          {providers?.data?.slice(0, 4).map((p) => (
+          {nearbyProviders?.data?.slice(0, 4).map((p) => (
             <Card key={p.id} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600">
                 <span className="text-sm font-bold">{(p.displayName ?? p.role ?? '').slice(0, 1).toUpperCase()}</span>
@@ -153,7 +168,7 @@ export function Home() {
               </button>
             </Card>
           ))}
-          {(!providers?.data?.length) && <p className="text-center text-xs text-gray-400">Aucun professionnel trouvé.</p>}
+          {(!nearbyProviders?.data?.length) && <p className="text-center text-xs text-gray-400">Aucun professionnel trouvé.</p>}
         </div>
       </section>
     </div>
