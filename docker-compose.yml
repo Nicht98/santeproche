@@ -8,6 +8,8 @@ services:
       dockerfile: ./infra/nginx/Dockerfile
     expose:
       - "80"
+    ports:
+      - "8080:80"
     depends_on:
       api:
         condition: service_healthy
