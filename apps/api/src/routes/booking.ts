@@ -15,6 +15,8 @@ const CreateAppointmentSchema = z.object({
 const UpdateAppointmentSchema = z.object({
   status: z.enum(['confirmed', 'completed', 'cancelled', 'no_show']).optional(),
   notes: z.string().max(2000).optional(),
+  newScheduledAt: z.string().datetime().optional(),
+  rescheduleReason: z.string().max(500).optional(),
 });
 
 export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
@@ -302,6 +304,24 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
     const updateData: Record<string, unknown> = {};
     if (body.status) updateData.status = body.status;
     if (body.notes !== undefined) updateData.notes = body.notes;
+
+    // Reschedule logic: only provider can propose/apply new time
+    if (body.newScheduledAt) {
+      if (!isProvider) {
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the provider can reschedule' } });
+      }
+      if (appt.status === 'cancelled' || appt.status === 'completed') {
+        return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'Cannot reschedule a cancelled or completed appointment' } });
+      }
+      updateData.scheduledAt = new Date(body.newScheduledAt);
+      updateData.rescheduledFrom = appt.scheduledAt;
+      updateData.rescheduledAt = new Date();
+      if (body.rescheduleReason) {
+        const prefix = '[RESCHEDULED]: ';
+        updateData.notes = prefix + body.rescheduleReason + '\n' + (appt.notes || '');
+      }
+    }
+
     if (body.status === 'cancelled') {
       updateData.cancelledAt = new Date();
       updateData.cancelledBy = userId;

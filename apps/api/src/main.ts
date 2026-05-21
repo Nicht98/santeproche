@@ -22,6 +22,7 @@ import { drugRoutes } from './routes/drugs.js';
 import { transportRoutes } from './routes/transport.js';
 import { sosRoutes } from './routes/sos.js';
 import { uploadRoutes } from './routes/upload.js';
+import { wsRoutes } from './routes/ws.js';
 
 // Validate critical env vars FIRST (before Fastify)
 const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
@@ -119,6 +120,7 @@ await fastify.register(sosRoutes, { prefix: '/api/v1' });
 await fastify.register(drugRoutes, { prefix: '/api/v1' });
 await fastify.register(transportRoutes, { prefix: '/api/v1' });
 await fastify.register(uploadRoutes, { prefix: '/api/v1' });
+await fastify.register(wsRoutes);
 
 // Error handler
 fastify.setErrorHandler((err, _req, reply) => {

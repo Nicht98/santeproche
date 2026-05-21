@@ -67,4 +67,6 @@ export const appointments = pgTable('appointments', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
   cancelledBy: uuid('cancelled_by').references(() => users.id),
+  rescheduledFrom: timestamp('rescheduled_from', { withTimezone: true }),
+  rescheduledAt: timestamp('rescheduled_at', { withTimezone: true }),
 });
