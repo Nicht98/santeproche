@@ -12,6 +12,14 @@ import { chatRoutes } from './routes/chat.js';
 import { bookingRoutes } from './routes/booking.js';
 import { providerRoutes } from './routes/providers.js';
 
+// Validate critical env vars FIRST (before Fastify)
+const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
+const missing = requiredEnv.filter((k) => !process.env[k]);
+if (missing.length > 0) {
+  console.error(`[FATAL] Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
 const fastify = Fastify({
   logger: {
     level: process.env.LOG_LEVEL || 'info',
@@ -20,14 +28,6 @@ const fastify = Fastify({
     }),
   },
 });
-
-// Validate critical env vars
-const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
-const missing = requiredEnv.filter((k) => !process.env[k]);
-if (missing.length > 0) {
-  fastify.log.error(`Missing required environment variables: ${missing.join(', ')}`);
-  process.exit(1);
-}
 
 // Decorate fastify with authenticate
 fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
