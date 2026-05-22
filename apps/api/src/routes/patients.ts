@@ -7,7 +7,9 @@ import { users, patientProfiles, cities } from '../db/schema/index.js';
 const RegisterSchema = z.object({
   firstName: z.string().min(1).max(50),
   lastName: z.string().min(1).max(50),
-  dateOfBirth: z.string().datetime().optional(),
+  dateOfBirth: z.string().optional().refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+    message: 'Invalid date format, expected YYYY-MM-DD',
+  }),
   gender: z.enum(['male', 'female', 'other']).optional(),
   bloodType: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
   address: z.string().max(500).optional(),
