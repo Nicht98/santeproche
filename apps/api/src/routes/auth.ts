@@ -35,7 +35,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     const body = OtpVerifySchema.parse(request.body);
     const valid = await verifyOtp(body.phone, body.code);
     if (!valid) {
-      return reply.code(400).send({ error: { code: 'INVALID_OTP', message: 'Invalid or expired OTP' } });
+      return reply.code(400).send({ error: { code: 'INVALID_OTP', message: 'Code invalide ou expiré.' } });
     }
 
     // Find or create user
@@ -105,7 +105,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         .limit(1);
 
       if (!stored || stored.revoked || new Date() > stored.expiresAt) {
-        return reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid refresh token' } });
+        return reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Jeton de rafraîchissement invalide.' } });
       }
 
       const [user] = await db.select().from(users).where(eq(users.id, decoded.id)).limit(1);

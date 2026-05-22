@@ -46,10 +46,10 @@ export const notificationRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!notif) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Notification not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Notification introuvable.' } });
     }
     if (notif.user_id !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Non autorisé.' } });
     }
 
     await query('UPDATE notifications SET is_read = TRUE, read_at = NOW() WHERE id = $1', [id]);
@@ -75,7 +75,7 @@ export const notificationRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Validate required fields
     if (!targetUserId || !type || !title || !body) {
-      return reply.code(400).send({ error: { code: 'MISSING_FIELDS', message: 'userId, type, title, body are required' } });
+      return reply.code(400).send({ error: { code: 'MISSING_FIELDS', message: 'Identifiant utilisateur, type, titre et contenu requis.' } });
     }
 
     const [notif] = await query(

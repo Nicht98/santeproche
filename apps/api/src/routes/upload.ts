@@ -14,12 +14,12 @@ export const uploadRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/upload/avatar', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const data = await request.file();
     if (!data) {
-      return reply.code(400).send({ error: { code: 'NO_FILE', message: 'No file uploaded' } });
+      return reply.code(400).send({ error: { code: 'NO_FILE', message: 'Aucun fichier téléchargé.' } });
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(data.mimetype)) {
-      return reply.code(400).send({ error: { code: 'INVALID_TYPE', message: 'Only JPEG, PNG, WebP allowed' } });
+      return reply.code(400).send({ error: { code: 'INVALID_TYPE', message: 'Formats acceptés : JPEG, PNG, WebP uniquement.' } });
     }
 
     const ext = path.extname(data.filename) || '.jpg';
@@ -41,12 +41,12 @@ export const uploadRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
     const data = await request.file();
     if (!data) {
-      return reply.code(400).send({ error: { code: 'NO_FILE', message: 'No file uploaded' } });
+      return reply.code(400).send({ error: { code: 'NO_FILE', message: 'Aucun fichier téléchargé.' } });
     }
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(data.mimetype)) {
-      return reply.code(400).send({ error: { code: 'INVALID_TYPE', message: 'Only JPEG, PNG, WebP allowed' } });
+      return reply.code(400).send({ error: { code: 'INVALID_TYPE', message: 'Formats acceptés : JPEG, PNG, WebP uniquement.' } });
     }
 
     // Verify user has rights to this facility
@@ -55,7 +55,7 @@ export const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       [request.user.id, id]
     );
     if (!profile && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized for this facility' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous n\'êtes pas autorisé pour cet établissement.' } });
     }
 
     const ext = path.extname(data.filename) || '.jpg';

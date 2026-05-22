@@ -93,7 +93,7 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
 
     if (!fromLat || !fromLng || !toLat || !toLng) {
       return reply.code(400).send({
-        error: { code: 'MISSING_COORDS', message: 'fromLat, fromLng, toLat, toLng are required' },
+        error: { code: 'MISSING_COORDS', message: 'Coordonnées de départ et d\'arrivée requises.' },
       });
     }
 
@@ -160,7 +160,7 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
 
     if (!fromLat || !fromLng) {
       return reply.code(400).send({
-        error: { code: 'MISSING_COORDS', message: 'fromLat and fromLng are required' },
+        error: { code: 'MISSING_COORDS', message: 'Latitude et longitude de départ requises.' },
       });
     }
 
@@ -242,12 +242,12 @@ export const transportRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/transport/stats', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const { role } = request.user;
     if (role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Admin only' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Réservé aux administrateurs.' } });
     }
 
     return {
       status: 'success',
-      message: 'Transport stats coming soon — requires analytics pipeline',
+      message: 'Statistiques bientôt disponibles.',
     };
   });
 };

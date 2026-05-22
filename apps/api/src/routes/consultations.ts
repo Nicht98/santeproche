@@ -22,13 +22,13 @@ export const consultationRoutes: FastifyPluginAsync = async (fastify) => {
       [appointmentId]
     );
     if (!appt) {
-      return reply.code(404).send({ error: { code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' } });
+      return reply.code(404).send({ error: { code: 'APPOINTMENT_NOT_FOUND', message: 'Rendez-vous introuvable.' } });
     }
     if (appt.provider_id !== providerId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the assigned provider can create records' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le soignant assigné peut créer un dossier.' } });
     }
     if (appt.status !== 'completed') {
-      return reply.code(400).send({ error: { code: 'APPOINTMENT_NOT_COMPLETED', message: 'Record can only be created for completed appointments' } });
+      return reply.code(400).send({ error: { code: 'APPOINTMENT_NOT_COMPLETED', message: 'Un dossier ne peut être créé que pour un rendez-vous terminé.' } });
     }
 
     const [record] = await query(
@@ -72,7 +72,7 @@ export const consultationRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Provider can only see their own records, patients can see records of their providers
     if (id !== userId && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Non autorisé.' } });
     }
 
     const records = await query(
@@ -104,10 +104,10 @@ export const consultationRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!record) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Record not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Dossier introuvable.' } });
     }
     if (record.provider_id !== userId && record.patient_id !== userId && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Non autorisé.' } });
     }
 
     return { data: record };
@@ -124,10 +124,10 @@ export const consultationRoutes: FastifyPluginAsync = async (fastify) => {
       [id]
     );
     if (!record) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Record not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Dossier introuvable.' } });
     }
     if (record.provider_id !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the creator can update this record' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le créateur peut modifier ce dossier.' } });
     }
 
     const fields: string[] = [];
@@ -156,7 +156,7 @@ export const consultationRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     if (fields.length === 0) {
-      return reply.code(400).send({ error: { code: 'NO_FIELDS', message: 'No fields to update' } });
+      return reply.code(400).send({ error: { code: 'NO_FIELDS', message: 'Aucun champ à mettre à jour.' } });
     }
 
     fields.push(`updated_at = $${idx++}`);

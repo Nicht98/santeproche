@@ -33,7 +33,7 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!provider?.facilityId) {
-      return { date, slots: [], message: 'Provider has no assigned facility' };
+      return { date, slots: [], message: 'Le soignant n\'est associé à aucun établissement.' };
     }
 
     // Forward to facility slot endpoint logic
@@ -107,7 +107,7 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!provider) {
-      return reply.code(404).send({ error: { code: 'PROVIDER_NOT_FOUND', message: 'Provider not found or inactive' } });
+      return reply.code(404).send({ error: { code: 'PROVIDER_NOT_FOUND', message: 'Professionnel introuvable ou inactif.' } });
     }
 
     // Conflict check: same provider, same time, pending/confirmed
@@ -125,7 +125,7 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (existing) {
-      return reply.code(409).send({ error: { code: 'SLOT_TAKEN', message: 'This time slot is no longer available' } });
+      return reply.code(409).send({ error: { code: 'SLOT_TAKEN', message: 'Ce créneau n\'est plus disponible.' } });
     }
 
     const [appointment] = await db
@@ -256,12 +256,12 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!appt) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Appointment not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Rendez-vous introuvable.' } });
     }
 
     // Only patient or provider can view
     if (appt.patientId !== userId && appt.providerId !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to view this appointment' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas voir ce rendez-vous.' } });
     }
 
     return appt;
@@ -280,7 +280,7 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!appt) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Appointment not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Rendez-vous introuvable.' } });
     }
 
     const isPatient = appt.patientId === userId;
@@ -293,11 +293,11 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
     // Authorization rules
     if (body.status === 'cancelled') {
       if (!isPatient && !isProvider) {
-        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the patient or provider can cancel' } });
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le patient ou le soignant peut annuler.' } });
       }
     } else if (body.status === 'confirmed' || body.status === 'completed' || body.status === 'no_show') {
       if (!isProvider) {
-        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the provider can confirm or complete' } });
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le soignant peut confirmer ou terminer.' } });
       }
     }
 
@@ -308,10 +308,10 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
     // Reschedule logic: only provider can propose/apply new time
     if (body.newScheduledAt) {
       if (!isProvider) {
-        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the provider can reschedule' } });
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le soignant peut replanifier.' } });
       }
       if (appt.status === 'cancelled' || appt.status === 'completed') {
-        return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'Cannot reschedule a cancelled or completed appointment' } });
+        return reply.code(409).send({ error: { code: 'INVALID_STATE', message: 'Impossible de replanifier un rendez-vous annulé ou terminé.' } });
       }
       updateData.scheduledAt = new Date(body.newScheduledAt);
       updateData.rescheduledFrom = appt.scheduledAt;
@@ -350,24 +350,24 @@ export const bookingRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!appt) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Appointment not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Rendez-vous introuvable.' } });
     }
 
     if (appt.status === 'cancelled') {
-      return reply.code(409).send({ error: { code: 'ALREADY_CANCELLED', message: 'Appointment is already cancelled' } });
+      return reply.code(409).send({ error: { code: 'ALREADY_CANCELLED', message: 'Rendez-vous déjà annulé.' } });
     }
 
     const isPatient = appt.patientId === userId;
     const isProvider = appt.providerId === userId;
 
     if (!isPatient && !isProvider) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to cancel this appointment' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas annuler ce rendez-vous.' } });
     }
 
     // Cancellation policy: must be at least 2 hours before scheduled time
     const hoursUntil = (new Date(appt.scheduledAt).getTime() - Date.now()) / 3600000;
     if (hoursUntil < 2) {
-      return reply.code(409).send({ error: { code: 'TOO_LATE', message: 'Appointments can only be cancelled at least 2 hours in advance' } });
+      return reply.code(409).send({ error: { code: 'TOO_LATE', message: 'Annulation possible jusqu\'à 2 heures avant le rendez-vous.' } });
     }
 
     const [updated] = await db

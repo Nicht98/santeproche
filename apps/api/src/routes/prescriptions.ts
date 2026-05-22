@@ -22,10 +22,10 @@ export const prescriptionRoutes: FastifyPluginAsync = async (fastify) => {
       [recordId]
     );
     if (!record) {
-      return reply.code(404).send({ error: { code: 'RECORD_NOT_FOUND', message: 'Consultation record not found' } });
+      return reply.code(404).send({ error: { code: 'RECORD_NOT_FOUND', message: 'Dossier de consultation introuvable.' } });
     }
     if (record.provider_id !== providerId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the attending provider can create prescriptions' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le soignant traitant peut créer des ordonnances.' } });
     }
 
     // Insert prescription
@@ -100,10 +100,10 @@ export const prescriptionRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!prescription) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Prescription not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Ordonnance introuvable.' } });
     }
     if (prescription.patient_id !== userId && prescription.provider_id !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to view this prescription' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas voir cette ordonnance.' } });
     }
 
     const items = await query(
@@ -125,10 +125,10 @@ export const prescriptionRoutes: FastifyPluginAsync = async (fastify) => {
       [id]
     );
     if (!prescription) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Prescription not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Ordonnance introuvable.' } });
     }
     if (prescription.provider_id !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only the prescribing provider can update status' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le prescripteur peut changer le statut.' } });
     }
 
     const [updated] = await query(

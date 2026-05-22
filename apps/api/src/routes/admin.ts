@@ -13,7 +13,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/admin/health/db', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
     }
 
     const pool = new Pool({
@@ -48,7 +48,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/admin/migrate', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
     }
 
     const result = await migrate();
@@ -64,7 +64,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/admin/providers/pending', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
     }
 
     const rows = await db
@@ -91,7 +91,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.patch('/admin/providers/:id/status', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
     }
 
     const body = request.body as any;

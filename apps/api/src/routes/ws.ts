@@ -95,7 +95,7 @@ export const wsRoutes: FastifyPluginAsync = async (fastify) => {
               }
             } else {
               if (socket.readyState === 1) {
-                socket.send(JSON.stringify({ type: 'error', message: 'Not authorized for this conversation' }));
+                socket.send(JSON.stringify({ type: 'error', message: 'Vous n\'êtes pas autorisé pour cette conversation.' }));
               }
             }
           } else if (msg?.ping) {

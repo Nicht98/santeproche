@@ -44,11 +44,11 @@ export const sosRoutes: FastifyPluginAsync = async (fastify) => {
     const { role } = request.user;
 
     if (role !== 'provider' && role !== 'admin' && role !== 'doctor') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only providers and admins can view SOS requests' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seuls les soignants et admins peuvent voir les urgences.' } });
     }
 
     if (!lat || !lng) {
-      return reply.code(400).send({ error: { code: 'MISSING_COORDS', message: 'lat and lng required' } });
+      return reply.code(400).send({ error: { code: 'MISSING_COORDS', message: 'Latitude et longitude requises.' } });
     }
 
     const R = 6371;
@@ -92,7 +92,7 @@ export const sosRoutes: FastifyPluginAsync = async (fastify) => {
     const { role } = request.user;
 
     if (role !== 'provider' && role !== 'admin' && role !== 'doctor') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only providers and admins can assign SOS requests' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seuls les soignants et admins peuvent assigner les urgences.' } });
     }
 
     const [sos] = await query(
@@ -100,10 +100,10 @@ export const sosRoutes: FastifyPluginAsync = async (fastify) => {
       [id]
     );
     if (!sos) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'SOS request not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Demande d\'urgence introuvable.' } });
     }
     if (sos.status !== 'active') {
-      return reply.code(400).send({ error: { code: 'ALREADY_HANDLED', message: 'SOS request already handled' } });
+      return reply.code(400).send({ error: { code: 'ALREADY_HANDLED', message: 'Demande d\'urgence déjà traitée.' } });
     }
 
     const [updated] = await query(
@@ -126,10 +126,10 @@ export const sosRoutes: FastifyPluginAsync = async (fastify) => {
       [id]
     );
     if (!sos) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'SOS request not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Demande d\'urgence introuvable.' } });
     }
     if (sos.requester_id !== currentUserId && sos.assigned_provider_id !== currentUserId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Not authorized to resolve this request' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas résoudre cette demande.' } });
     }
 
     const [updated] = await query(

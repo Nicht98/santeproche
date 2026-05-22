@@ -8,7 +8,7 @@ const RegisterSchema = z.object({
   firstName: z.string().min(1).max(50),
   lastName: z.string().min(1).max(50),
   dateOfBirth: z.string().optional().refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: 'Invalid date format, expected YYYY-MM-DD',
+    message: 'Format de date invalide. Utilisez AAAA-MM-JJ.',
   }),
   gender: z.enum(['male', 'female', 'other']).optional(),
   bloodType: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
@@ -31,7 +31,7 @@ export const patientRoutes: FastifyPluginAsync = async (fastify) => {
     const [existing] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, userId)).limit(1);
     if (existing) {
       return reply.code(409).send({
-        error: { code: 'PROFILE_EXISTS', message: 'Patient profile already exists. Use PATCH /patients/me to update.' },
+        error: { code: 'PROFILE_EXISTS', message: 'Profil déjà existant. Modifiez-le via les paramètres.' },
       });
     }
 
@@ -86,7 +86,7 @@ export const patientRoutes: FastifyPluginAsync = async (fastify) => {
 
     const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!user) {
-      return reply.code(404).send({ error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
+      return reply.code(404).send({ error: { code: 'USER_NOT_FOUND', message: 'Utilisateur introuvable.' } });
     }
 
     const [profile] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, userId)).limit(1);
@@ -138,7 +138,7 @@ export const patientRoutes: FastifyPluginAsync = async (fastify) => {
     const [existing] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, userId)).limit(1);
     if (!existing) {
       return reply.code(404).send({
-        error: { code: 'PROFILE_NOT_FOUND', message: 'Patient profile not found. Register first at POST /patients/register' },
+        error: { code: 'PROFILE_NOT_FOUND', message: 'Profil introuvable. Inscrivez-vous d\'abord.' },
       });
     }
 

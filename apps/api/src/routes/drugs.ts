@@ -49,7 +49,7 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/drugs/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const [drug] = await query('SELECT * FROM drugs WHERE id = $1 LIMIT 1', [id]);
-    if (!drug) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Drug not found' } });
+    if (!drug) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Médicament introuvable.' } });
 
     // Also include stock at nearby facilities if lat/lng provided
     const { lat, lng, radiusKm = '5' } = request.query as Record<string, string>;
@@ -174,11 +174,11 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
       [userId, id]
     );
     if (!profile && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only facility staff can manage stock' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le personnel de l\'établissement peut gérer le stock.' } });
     }
 
     const [drug] = await query('SELECT id FROM drugs WHERE id = $1 LIMIT 1', [drugId]);
-    if (!drug) return reply.code(404).send({ error: { code: 'DRUG_NOT_FOUND', message: 'Drug not found in catalog' } });
+    if (!drug) return reply.code(404).send({ error: { code: 'DRUG_NOT_FOUND', message: 'Médicament introuvable dans le catalogue.' } });
 
     const [existing] = await query(
       'SELECT id FROM drug_stock WHERE facility_id = $1 AND drug_id = $2 LIMIT 1',
@@ -216,7 +216,7 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
       [userId, id]
     );
     if (!profile && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only facility staff can manage stock' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le personnel de l\'établissement peut gérer le stock.' } });
     }
 
     const [existing] = await query(
@@ -224,7 +224,7 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
       [id, drugId]
     );
     if (!existing) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'This drug is not in stock at this facility' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Ce médicament n\'est pas en stock dans cet établissement.' } });
     }
 
     const updates: string[] = ['last_updated = NOW()', `updated_by = '${userId}'`];
@@ -249,7 +249,7 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
       values.push(locationInStore);
     }
 
-    if (values.length === 0) return reply.code(400).send({ error: { code: 'NO_FIELDS', message: 'No fields to update' } });
+    if (values.length === 0) return reply.code(400).send({ error: { code: 'NO_FIELDS', message: 'Aucun champ à mettre à jour.' } });
 
     values.push(id, drugId);
     const [updated] = await query(
@@ -270,20 +270,20 @@ export const drugRoutes: FastifyPluginAsync = async (fastify) => {
       [userId, id]
     );
     if (!profile && request.user.role !== 'admin') {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Only facility staff can manage stock' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Seul le personnel de l\'établissement peut gérer le stock.' } });
     }
 
     const [existing] = await query(
       'SELECT id FROM drug_stock WHERE facility_id = $1 AND drug_id = $2 LIMIT 1',
       [id, drugId]
     );
-    if (!existing) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Drug not found in facility stock' } });
+    if (!existing) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Médicament introuvable dans le stock de l\'établissement.' } });
 
     await query(
       'UPDATE drug_stock SET is_available = FALSE, is_in_stock = FALSE, quantity = 0, last_updated = NOW(), updated_by = $1 WHERE id = $2',
       [userId, existing.id]
     );
 
-    return { status: 'success', message: 'Drug marked as out of stock' };
+    return { status: 'success', message: 'Médicament marqué comme en rupture de stock.' };
   });
 };

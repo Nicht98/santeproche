@@ -14,10 +14,10 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
     const reviewerId = request.user.id;
 
     if (!providerId && !facilityId) {
-      return reply.code(400).send({ error: { code: 'MISSING_TARGET', message: 'Either providerId or facilityId is required' } });
+      return reply.code(400).send({ error: { code: 'MISSING_TARGET', message: 'Identifiant du soignant ou de l\'établissement requis.' } });
     }
     if (rating < 1 || rating > 5) {
-      return reply.code(400).send({ error: { code: 'INVALID_RATING', message: 'Rating must be between 1 and 5' } });
+      return reply.code(400).send({ error: { code: 'INVALID_RATING', message: 'La note doit être entre 1 et 5.' } });
     }
 
     // Optional: verify completed appointment if appointmentId provided
@@ -28,10 +28,10 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
         [appointmentId]
       );
       if (!appt || appt.patient_id !== reviewerId) {
-        return reply.code(403).send({ error: { code: 'UNAUTHORIZED', message: 'You can only review your own appointments' } });
+        return reply.code(403).send({ error: { code: 'UNAUTHORIZED', message: 'Vous ne pouvez évaluer que vos propres rendez-vous.' } });
       }
       if (appt.status !== 'completed') {
-        return reply.code(400).send({ error: { code: 'APPOINTMENT_NOT_COMPLETED', message: 'Can only review completed appointments' } });
+        return reply.code(400).send({ error: { code: 'APPOINTMENT_NOT_COMPLETED', message: 'Vous ne pouvez évaluer que les rendez-vous terminés.' } });
       }
       isVerified = true;
     }
@@ -112,10 +112,10 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!review) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Review not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Évaluation introuvable.' } });
     }
     if (review.reviewer_id !== userId) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'You can only delete your own reviews' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez supprimer que vos propres évaluations.' } });
     }
 
     await query('UPDATE reviews SET deleted_at = NOW() WHERE id = $1', [id]);

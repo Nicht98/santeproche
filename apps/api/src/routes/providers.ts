@@ -123,7 +123,7 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!row) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Provider not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Soignant introuvable.' } });
     }
 
     // Fetch weekly schedule

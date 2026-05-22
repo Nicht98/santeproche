@@ -149,7 +149,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     const { latitude, longitude, radius, limit: nearbyLimit } = request.query as Record<string, string>;
 
     if (!latitude || !longitude) {
-      return reply.code(400).send({ error: { code: 'MISSING_PARAMS', message: 'latitude and longitude required' } });
+      return reply.code(400).send({ error: { code: 'MISSING_PARAMS', message: 'Latitude et longitude requises.' } });
     }
 
     // Redirect to the unified /facilities endpoint with query params
@@ -192,7 +192,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
       .limit(1);
 
     if (!facility) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Facility not found' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Établissement introuvable.' } });
     }
 
     // Get providers at this facility
@@ -224,7 +224,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     const { date, providerId } = request.query as { date: string; providerId?: string };
 
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return reply.code(400).send({ error: { code: 'INVALID_DATE', message: 'date required (YYYY-MM-DD)' } });
+      return reply.code(400).send({ error: { code: 'INVALID_DATE', message: 'Date requise (AAAA-MM-JJ).' } });
     }
 
     // Map JS day (0=Sun) to enum
