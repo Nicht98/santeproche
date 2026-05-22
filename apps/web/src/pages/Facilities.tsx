@@ -9,7 +9,7 @@ import { LocationBanner } from '../components/LocationBanner';
 export function Facilities() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [type, setType] = useState('');
+  const [kind, setKind] = useState('');
   const [nearbyOnly, setNearbyOnly] = useState(false);
   const { lat, lng } = useLocationStore();
 
@@ -17,7 +17,7 @@ export function Facilities() {
 
   const { data, isLoading, error } = useFacilities({
     search: search || undefined,
-    type: type || undefined,
+    kind: kind || undefined,
     limit: 20,
     ...(useGeo ? { lat, lng, radiusKm: 10 } : {}),
   });
@@ -67,9 +67,9 @@ export function Facilities() {
         {['Tous', 'pharmacy', 'hospital', 'clinic'].map((t) => (
           <button
             key={t}
-            onClick={() => setType(t === 'Tous' ? '' : t)}
+            onClick={() => setKind(t === 'Tous' ? '' : t)}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
-              (type === t || (t === 'Tous' && !type))
+              (kind === t || (t === 'Tous' && !kind))
                 ? 'bg-brand-600 text-white'
                 : 'bg-gray-100 text-gray-600'
             }`}
@@ -83,7 +83,7 @@ export function Facilities() {
 
       <div className="space-y-2 pb-6">
         {data?.data?.map((f) => {
-          const Icon = iconMap[f.type] || MapPin;
+          const Icon = iconMap[f.kind] || MapPin;
           return (
             <Card key={f.id} className="flex items-start gap-3">
               <div className="rounded-lg bg-brand-50 p-2">

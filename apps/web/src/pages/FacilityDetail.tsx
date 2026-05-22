@@ -16,7 +16,7 @@ export function FacilityDetail() {
 
   const f = data.data;
   const iconMap: Record<string, typeof Pill> = { pharmacy: Pill, hospital: Stethoscope, clinic: Stethoscope };
-  const Icon = iconMap[f.type] || MapPin;
+  const Icon = iconMap[f.kind] || MapPin;
   const stockList = stockData?.data ?? [];
 
   return (
@@ -27,7 +27,7 @@ export function FacilityDetail() {
           <div className="rounded-lg bg-white/20 p-2"><Icon className="h-6 w-6 text-white" /></div>
           <div>
             <h1 className="text-lg font-bold text-white">{f.name}</h1>
-            <p className="text-sm text-brand-100 capitalize">{f.type === 'pharmacy' ? 'Pharmacie' : f.type === 'hospital' ? 'Hôpital' : f.type === 'clinic' ? 'Clinique' : f.type}</p>
+            <p className="text-sm text-brand-100 capitalize">{f.kind === 'pharmacy' ? 'Pharmacie' : f.kind === 'hospital' ? 'Hôpital' : f.kind === 'clinic' ? 'Clinique' : f.kind}</p>
           </div>
         </div>
       </div>

@@ -141,13 +141,15 @@ export const providers = {
 export interface Facility {
   id: string;
   name: string;
-  type: string;
+  kind: string;
   address: string | null;
   city: string | null;
   lat: number | null;
   lng: number | null;
   phone: string | null;
   distanceKm?: number;
+  is24h?: boolean;
+  hasEmergency?: boolean;
 }
 export interface FacilitiesQuery {
   lat?: number;
@@ -155,7 +157,7 @@ export interface FacilitiesQuery {
   radiusKm?: number;
   limit?: number;
   search?: string;
-  type?: string;
+  kind?: string;
 }
 export const facilities = {
   list: (params?: FacilitiesQuery) =>

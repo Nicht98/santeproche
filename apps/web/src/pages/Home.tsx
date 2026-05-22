@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert } from 'lucide-react';
+import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert, Navigation } from 'lucide-react';
 import { useFacilities, useProviders } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
 import { useLocationStore } from '../stores/location';
@@ -97,10 +97,14 @@ export function Home() {
       )}
 
       {/* Quick actions */}
-      <div className="grid grid-cols-3 gap-2 px-4">
+      <div className="grid grid-cols-4 gap-2 px-4">
         <button onClick={() => navigate('/providers')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
           <Stethoscope className="h-6 w-6 text-brand-600" />
           <span className="text-xs font-medium text-gray-700">Médecins</span>
+        </button>
+        <button onClick={() => navigate('/nearby')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
+          <Navigation className="h-6 w-6 text-brand-600" />
+          <span className="text-xs font-medium text-gray-700">À proximité</span>
         </button>
         <button onClick={() => navigate('/facilities')} className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 shadow-sm">
           <MapPin className="h-6 w-6 text-brand-600" />
@@ -125,7 +129,7 @@ export function Home() {
             <Card key={f.id} className="flex items-start gap-3">
               <div className="mt-0.5 rounded-lg bg-brand-50 p-2">
                 {(() => {
-                  const Icon = (icons[f.type] || Pill) as React.ComponentType<{ className?: string }>;
+                  const Icon = (icons[f.kind] || Pill) as React.ComponentType<{ className?: string }>;
                   return <Icon className="h-5 w-5 text-brand-600" />;
                 })()}
               </div>

@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Stethoscope, MapPin, MessageSquare, User } from 'lucide-react';
+import { Home, Stethoscope, MapPin, MessageSquare, User, Navigation } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 
 export function Layout() {
@@ -41,7 +41,8 @@ export function Layout() {
             ) : (
               <>
                 <NavItem icon={Stethoscope} label="Annuaire" onClick={() => navigate('/providers')} active={location.pathname === '/providers' || location.pathname.startsWith('/provider/')} />
-                <NavItem icon={MapPin} label="Lieux" onClick={() => navigate('/facilities')} active={location.pathname === '/facilities' || location.pathname.startsWith('/facility/')} />
+                <NavItem icon={Navigation} label="À proximité" onClick={() => navigate('/nearby')} active={location.pathname === '/nearby' || location.pathname.startsWith('/facility/')} />
+                <NavItem icon={MapPin} label="Établissements" onClick={() => navigate('/facilities')} active={location.pathname === '/facilities'} />
                 <NavItem icon={MessageSquare} label="Chat" onClick={() => navigate('/chat')} active={location.pathname === '/chat'} />
                 <NavItem icon={User} label="Profil" onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
               </>

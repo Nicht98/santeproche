@@ -87,7 +87,7 @@ export function SearchPage() {
         {(activeTab === 'all' || activeTab === 'facilities') && facilityList.map((f) => (
           <Card key={f.id} className="flex items-start gap-3">
             <div className="mt-0.5 rounded-lg bg-brand-50 p-2">
-              {f.type === 'pharmacy' ? (
+              {f.kind === 'pharmacy' ? (
                 <Pill className="h-5 w-5 text-brand-600" />
               ) : (
                 <Stethoscope className="h-5 w-5 text-brand-600" />

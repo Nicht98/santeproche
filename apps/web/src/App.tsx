@@ -14,6 +14,7 @@ import { AppointmentDetail } from './pages/AppointmentDetail';
 import { Booking } from './pages/Booking';
 import { Chat } from './pages/Chat';
 import { SearchPage } from './pages/SearchPage';
+import { NearbyPage } from './pages/NearbyPage';
 import { PatientRegister } from './pages/PatientRegister';
 import { Profile } from './pages/Profile';
 
@@ -79,6 +80,7 @@ function AuthGate() {
             <Route path="/provider/:id" element={<AuthOrGuest allowGuest><ProviderDetail /></AuthOrGuest>} />
             <Route path="/facilities" element={<AuthOrGuest allowGuest><Facilities /></AuthOrGuest>} />
             <Route path="/facility/:id" element={<AuthOrGuest allowGuest><FacilityDetail /></AuthOrGuest>} />
+            <Route path="/nearby" element={<AuthOrGuest allowGuest><NearbyPage /></AuthOrGuest>} />
 
             {/* Protected patient routes: patients only */}
             <Route path="/appointments" element={<PatientOnly><Appointments /></PatientOnly>} />
