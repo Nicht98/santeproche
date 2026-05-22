@@ -145,14 +145,43 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // POST /providers/register
-  fastify.post('/providers/register', async (request, reply) => {
+  fastify.post('/providers/register', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const body = request.body as any;
-    const userResult = await query(
-      'INSERT INTO users (phone, display_name, role, status) VALUES ($1, $2, $3, $4) RETURNING *',
-      [body.phone, body.displayName, body.kind === 'doctor' ? 'doctor' : 'pharmacist', 'pending_verification']
-    );
-    const user = userResult[0] as { id: string; status: string };
-    return reply.code(201).send({ userId: user.id, status: user.status });
+    const userId = (request.user as { id: string }).id;
+
+    // Update existing user: set display_name, role, status
+    const kind = body.kind === 'doctor' ? 'doctor' : 'pharmacist';
+    await db.update(users)
+      .set({
+        displayName: body.displayName,
+        role: kind,
+        status: 'pending_verification',
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+
+    // Create provider profile
+    const existingProfile = await db.select().from(providerProfiles).where(eq(providerProfiles.userId, userId)).limit(1);
+    if (existingProfile.length === 0) {
+      await db.insert(providerProfiles).values({
+        userId,
+        jobTitle: body.jobTitle,
+        licenseNumber: body.licenseNumber,
+        kycStatus: 'pending',
+        kycSubmittedAt: new Date(),
+      });
+    } else {
+      await db.update(providerProfiles)
+        .set({
+          jobTitle: body.jobTitle,
+          licenseNumber: body.licenseNumber,
+          kycStatus: 'pending',
+          kycSubmittedAt: new Date(),
+        })
+        .where(eq(providerProfiles.userId, userId));
+    }
+
+    return reply.code(201).send({ userId, status: 'pending_verification' });
   });
 
   // POST /providers/facility (register facility)
