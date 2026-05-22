@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { Card, ErrorBanner } from '../components/ui';
 import { api } from '../lib/api';
 
 interface ProviderRegisterBody {
-  phone: string;
   displayName: string;
   kind: 'doctor' | 'pharmacist';
   jobTitle: string;
@@ -15,34 +15,29 @@ interface ProviderRegisterBody {
 export function ProviderRegister() {
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const isPatient = useAuthStore((s) => s.isPatient);
+  const completeProfile = useAuthStore((s) => s.completeProfile);
 
-  const [step, setStep] = useState<'form' | 'done'>('form');
+  const [step, setStep] = useState<'doc' | 'form' | 'done'>('doc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<ProviderRegisterBody>({
-    phone: '+237',
     displayName: '',
     kind: 'doctor',
     jobTitle: '',
     licenseNumber: '',
   });
 
-  // If already a provider with complete profile, redirect to dashboard
-  // If already a patient with complete profile, let them continue (creating a new provider account)
-  if (isAuthenticated && isPatient) {
+  // Unauthenticated users must log in first
+  if (!isAuthenticated) {
     return (
-      <div className="p-4">
-        <Card>
-          <h1 className="text-lg font-bold text-gray-900">Inscription professionnel santé</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Votre compte patient existe déjà. Créez un compte séparé pour exercer en tant que professionnel de santé.
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-sm text-center">
+          <p className="text-sm text-gray-700">Connectez-vous d'abord pour inscrire un compte professionnel.</p>
           <button
             onClick={() => navigate('/login')}
-            className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
           >
-            Connectez-vous avec un autre numéro
+            Connexion
           </button>
         </Card>
       </div>
@@ -58,10 +53,11 @@ export function ProviderRegister() {
     setLoading(true);
     setError('');
     try {
-      await api<{ userId: string; status: string }>('/providers/register', {
+      await api<Record<string, unknown>>('/providers/register', {
         method: 'POST',
         body: JSON.stringify(form),
       });
+      completeProfile();
       setStep('done');
     } catch (err: any) {
       setError(err?.data?.message ?? 'Erreur lors de l\'inscription. Réessayez.');
@@ -70,16 +66,42 @@ export function ProviderRegister() {
     }
   };
 
+  if (step === 'doc') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-sm">
+          <div className="text-center">
+            <ShieldAlert className="mx-auto h-10 w-10 text-amber-500" />
+            <h1 className="mt-3 text-lg font-bold text-gray-900">Validation requise</h1>
+            <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+              Les professionnels de santé doivent être vérifiés avant de pouvoir recevoir des patients.
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Attendez-vous à recevoir un SMS une fois votre compte validé.
+            </p>
+            <button
+              onClick={() => setStep('form')}
+              className="mt-5 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              Continuer
+            </button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   if (step === 'done') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-sm text-center">
-          <h1 className="text-lg font-bold text-gray-900">Inscription réussie</h1>
+          <CheckCircle className="mx-auto h-10 w-10 text-green-500" />
+          <h1 className="mt-3 text-lg font-bold text-gray-900">Inscription réussie</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Votre compte professionnel est créé avec le statut « en attente de vérification ».
+            Votre demande est en cours de vérification.
           </p>
           <p className="mt-1 text-sm text-gray-500">
-            Connectez-vous avec votre numéro de téléphone pour accéder au tableau de bord.
+            Vous recevrez un SMS lorsque votre compte sera activé.
           </p>
           <button
             onClick={() => navigate('/login')}
@@ -99,24 +121,11 @@ export function ProviderRegister() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-sm">
         <h1 className="text-lg font-bold text-gray-900">Inscription professionnel santé</h1>
-        <p className="mt-1 text-xs text-gray-500">Créez un compte pour recevoir des rendez-vous.</p>
+        <p className="mt-1 text-xs text-gray-500">Remplissez vos informations pour validation.</p>
 
         {error && <div className="mt-4"><ErrorBanner message={error} /></div>}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium text-gray-700">Numéro de téléphone</span>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={change('phone')}
-              pattern="^\+237[0-9]{9}$"
-              placeholder="+2376XXXXXXXX"
-              required
-              className={inputCls}
-            />
-          </label>
-
           <label className="block">
             <span className="text-sm font-medium text-gray-700">Nom complet</span>
             <input
@@ -129,7 +138,7 @@ export function ProviderRegister() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-gray-700">Type de professionnel</span>
+            <span className="text-sm font-medium text-gray-700">Type</span>
             <select className={inputCls} value={form.kind} onChange={change('kind')} required>
               <option value="doctor">Médecin</option>
               <option value="pharmacist">Pharmacien(ne)</option>
@@ -163,7 +172,7 @@ export function ProviderRegister() {
             disabled={loading}
             className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            {loading ? 'Création…' : 'Créer le compte'}
+            {loading ? 'Envoi…' : 'Soumettre pour validation'}
           </button>
 
           <p className="text-center text-xs text-gray-500">

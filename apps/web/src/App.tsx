@@ -19,6 +19,7 @@ import { Profile } from './pages/Profile';
 
 import { ProviderDashboard } from './pages/ProviderDashboard';
 import { ProviderRegister } from './pages/ProviderRegister';
+import { AdminPanel } from './pages/AdminPanel';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,7 +90,9 @@ function AuthGate() {
             <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
             <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
 
-            {/* Protected provider routes: providers only */}
+            {/* Admin routes (no guard, secret-based) */}
+            <Route path="/admin" element={<AdminPanel />} />
+
             <Route path="/dashboard" element={<ProviderOnly><ProviderDashboard /></ProviderOnly>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
