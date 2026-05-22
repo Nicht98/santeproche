@@ -64,7 +64,7 @@ export function SearchPage() {
 
       <div className="space-y-2 pb-6">
         {/* Providers */}
-        {(activeTab === 'all' || activeTab === 'providers') && providerList.map((p) => (
+        {(activeTab === 'all' || activeTab === 'providers') && providerList.filter(Boolean).map((p) => (
           <Card key={p.id} className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600">
               <span className="text-sm font-bold">{(p.displayName ?? p.role ?? '').slice(0, 1).toUpperCase()}</span>
@@ -84,10 +84,10 @@ export function SearchPage() {
         ))}
 
         {/* Facilities */}
-        {(activeTab === 'all' || activeTab === 'facilities') && facilityList.map((f) => (
+        {(activeTab === 'all' || activeTab === 'facilities') && facilityList.filter(Boolean).map((f) => (
           <Card key={f.id} className="flex items-start gap-3">
             <div className="mt-0.5 rounded-lg bg-brand-50 p-2">
-              {f.kind === 'pharmacy' ? (
+              {f?.kind === 'pharmacy' ? (
                 <Pill className="h-5 w-5 text-brand-600" />
               ) : (
                 <Stethoscope className="h-5 w-5 text-brand-600" />

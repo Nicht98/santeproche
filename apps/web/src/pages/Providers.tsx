@@ -74,7 +74,7 @@ export function Providers() {
       {error && <ErrorBanner error={error} onRetry={refetch} />}
 
       <div className="space-y-2 pb-6">
-        {data?.data?.map((p) => (
+        {data?.data?.filter(Boolean)?.map((p) => (
           <Card key={p.id} className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50">
               <span className="text-sm font-bold text-brand-600">{(p.displayName ?? '?').slice(0, 1).toUpperCase()}</span>

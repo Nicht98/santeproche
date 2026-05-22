@@ -108,7 +108,7 @@ export function Home() {
             </button>
           </div>
           <div className="space-y-2.5">
-            {facLoading ? <SkeletonGrid count={3} /> : nearbyFacilities?.data?.slice(0, 5).map((f) => (
+            {facLoading ? <SkeletonGrid count={3} /> : nearbyFacilities?.data?.filter(Boolean)?.slice(0, 5).map((f) => (
               <Card key={f.id} className="group flex items-start gap-3.5 !p-3.5" onClick={() => navigate(`/facility/${f.id}`)}>
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-emerald-50 text-xl">🏥</div>
                 <div className="min-w-0 flex-1">
@@ -134,7 +134,7 @@ export function Home() {
             </button>
           </div>
           <div className="space-y-2.5">
-            {provLoading ? <SkeletonGrid count={3} /> : nearbyProviders?.data?.slice(0, 4).map((p) => (
+            {provLoading ? <SkeletonGrid count={3} /> : nearbyProviders?.data?.filter(Boolean)?.slice(0, 4).map((p) => (
               <Card key={p.id} className="group flex items-center gap-3 !py-3.5" onClick={() => navigate(`/provider/${p.id}`)}>
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-100 to-emerald-100 text-sm font-bold text-brand-700">
                   {(p.displayName ?? p.role ?? '').slice(0, 1).toUpperCase()}

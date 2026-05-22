@@ -91,7 +91,7 @@ export function Chat() {
           </div>
           {convoError && <div className="mb-3"><ErrorBanner error={convoError} onRetry={refetchConvos} /></div>}
           <div className="mt-3 space-y-2.5">
-            {conversations.map((c: any) => (
+            {conversations.filter(Boolean).map((c: any) => (
               <div
                 key={c.id}
                 onClick={() => selectConversation(c.id)}

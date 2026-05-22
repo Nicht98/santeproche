@@ -152,8 +152,8 @@ export function NearbyPage() {
 
       {/* Results */}
       <div className="space-y-2 px-4">
-        {list.map((f) => {
-          const cfg = kindConfig[(f.kind as Kind) ?? 'all'] ?? kindConfig.all;
+        {list.filter(Boolean)?.map((f) => {
+          const cfg = kindConfig[((f?.kind ?? "all") as Kind) ?? 'all'] ?? kindConfig.all;
           const Icon = cfg.icon;
           return (
             <Card key={f.id} className="flex items-start gap-3">

@@ -83,8 +83,8 @@ export function Facilities() {
       {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{formatError(error)}</div>}
 
       <div className="space-y-2 pb-6">
-        {data?.data?.map((f) => {
-          const Icon = iconMap[f.kind] || MapPin;
+        {data?.data?.filter(Boolean)?.map((f) => {
+          const Icon = iconMap[f?.kind ?? ''] || MapPin;
           return (
             <Card key={f.id} className="flex items-start gap-3">
               <div className="rounded-lg bg-brand-50 p-2">
