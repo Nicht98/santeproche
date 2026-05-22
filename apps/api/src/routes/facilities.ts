@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { eq, and, sql, ilike, inArray, gte, lte } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { db, query } from '../db/index.js';
 import { facilities, users, providerProfiles, cities, appointments, providerSchedules } from '../db/schema/index.js';
 
 const FacilityQuerySchema = z.object({
@@ -298,7 +298,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /facilities/:id/stock — list drug stock for a facility
   fastify.get('/facilities/:id/stock', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { q, status: stockStatus, limit = '50', offset = '0' } = request.query as Record<string, string>;
+    const { q, limit = '50', offset = '0' } = request.query as Record<string, string>;
 
     if (!id) {
       return reply.code(400).send({ error: { code: 'MISSING_PARAMS', message: 'facility id required' } });
@@ -308,11 +308,11 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     const os = parseInt(offset, 10);
     const searchQ = q ? q.trim() : '';
 
-    let query;
+    let stockQuery;
     let params;
 
     if (searchQ) {
-      query = `
+      stockQuery = `
         SELECT ds.id, ds.facility_id, ds.drug_id, ds.quantity, ds.price_xaf, ds.is_available, ds.is_in_stock,
                ds.location_in_store, ds.last_updated, ds.created_at,
                d.name AS drug_name, d.generic_name, d.category, d.dosage, d.form, d.manufacturer
@@ -326,7 +326,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
       `;
       params = [id, searchQ, l, os];
     } else {
-      query = `
+      stockQuery = `
         SELECT ds.id, ds.facility_id, ds.drug_id, ds.quantity, ds.price_xaf, ds.is_available, ds.is_in_stock,
                ds.location_in_store, ds.last_updated, ds.created_at,
                d.name AS drug_name, d.generic_name, d.category, d.dosage, d.form, d.manufacturer
@@ -340,7 +340,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
       params = [id, l, os];
     }
 
-    const rows = await db.execute(sql.raw(query, params));
+    const rows = await query(stockQuery, params);
 
     return { data: rows, pagination: { limit: l, offset: os, count: rows.length } };
   });
