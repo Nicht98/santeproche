@@ -37,6 +37,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setAuth: (payload) => {
     localStorage.setItem('auth', JSON.stringify(payload));
+    localStorage.setItem('accessToken', payload.accessToken);
+    localStorage.setItem('refreshToken', payload.refreshToken);
     localStorage.removeItem('auth_guest');
     set({
       user: payload.user,
@@ -63,11 +65,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem('auth');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('auth_guest');
     set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false });
   },
 
-  hydrate: () => {},
+  hydrate: () => {
+    try {
+      const raw = localStorage.getItem('auth');
+      if (raw) {
+        const parsed = JSON.parse(raw) as AuthResponse;
+        if (parsed?.accessToken) {
+          localStorage.setItem('accessToken', parsed.accessToken);
+        }
+        if (parsed?.refreshToken) {
+          localStorage.setItem('refreshToken', parsed.refreshToken);
+        }
+      }
+    } catch { /* noop */ }
+  },
 
   loginAsGuest: () => {
     localStorage.setItem('auth_guest', '1');

@@ -160,10 +160,10 @@ export interface FacilitiesQuery {
 export const facilities = {
   list: (params?: FacilitiesQuery) =>
     api<{ data: Facility[]; total: number }>(`/facilities?${qs(params)}`),
-  nearby: (lat: number, lng: number, radiusKm?: number) =>
-    api<void>(`/facilities/nearby?${qs({ latitude: lat, longitude: lng, radius: radiusKm ?? 5 })}`),
   get: (id: string) =>
     api<{ data: Facility }>(`/facilities/${id}`),
+  stock: (id: string, q?: string) =>
+    api<{ data: any[]; pagination: { limit: number; offset: number; count: number } }>(`/facilities/${id}/stock?${q ? 'q=' + encodeURIComponent(q) : ''}`),
 };
 
 /* ---------- Appointments ---------- */

@@ -25,7 +25,7 @@ export const facilities = pgTable('facilities', {
   cityId: integer('city_id').references(() => cities.id, { onDelete: 'set null' }),
   lat: numeric('lat', { precision: 10, scale: 7 }),
   lng: numeric('lng', { precision: 10, scale: 7 }),
-  openingHours: jsonb('opening_hours'), // {monday: {open:"08:00",close:"18:00"}}
+  openingHours: jsonb('opening_hours'),
   is24h: boolean('is_24h').notNull().default(false),
   hasEmergency: boolean('has_emergency').notNull().default(false),
   licenseNumber: varchar('license_number', { length: 100 }),
@@ -42,7 +42,7 @@ export const providerSchedules = pgTable('provider_schedules', {
   providerId: uuid('provider_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   facilityId: uuid('facility_id').references(() => facilities.id, { onDelete: 'cascade' }),
   dayOfWeek: dayOfWeekEnum('day_of_week').notNull(),
-  startTime: varchar('start_time', { length: 5 }).notNull(), // HH:MM
+  startTime: varchar('start_time', { length: 5 }).notNull(),
   endTime: varchar('end_time', { length: 5 }).notNull(),
   slotDurationMin: integer('slot_duration_min').notNull().default(30),
   isActive: boolean('is_active').notNull().default(true),
