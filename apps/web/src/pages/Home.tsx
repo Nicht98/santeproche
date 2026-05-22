@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Search, Pill, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useFacilities, useProviders } from '../hooks/api';
@@ -6,12 +6,21 @@ import { useAuthStore } from '../stores/auth';
 import { useLocationStore } from '../stores/location';
 import { Card, LoadingScreen } from '../components/ui';
 import { LocationBanner } from '../components/LocationBanner';
+
 export function Home() {
   const navigate = useNavigate();
   const isGuest = useAuthStore((s) => s.isGuest);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isProvider = useAuthStore((s) => s.isProvider);
   const [q, setQ] = useState('');
   const { lat, lng } = useLocationStore();
+
+  // Redirect providers to dashboard
+  useEffect(() => {
+    if (isAuthenticated && isProvider) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, isProvider, navigate]);
 
   const { data: nearbyFacilities, isLoading: facLoading } = useFacilities({
     limit: 5,

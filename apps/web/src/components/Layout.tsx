@@ -7,6 +7,7 @@ export function Layout() {
   const navigate = useNavigate();
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   const isGuest = useAuthStore((s) => s.isGuest);
+  const isProvider = useAuthStore((s) => s.isProvider);
   const hideNav = location.pathname === '/login' || location.pathname.startsWith('/register');
 
   // Only block nav if not authenticated AND not guest
@@ -18,7 +19,6 @@ export function Layout() {
   );
 
   if (noNav && !hideNav && location.pathname !== '/') {
-    // If at a protected route without auth, still render outlet (login redirect handled by AuthOrGuest)
     return <Outlet />;
   }
 
@@ -32,10 +32,20 @@ export function Layout() {
         <nav className="fixed bottom-0 left-0 right-0 border-t bg-white">
           <div className="mx-auto flex max-w-lg justify-around py-1">
             <NavItem icon={Home} label="Accueil" onClick={() => navigate('/')} active={location.pathname === '/'} />
-            <NavItem icon={Stethoscope} label="Annuaire" onClick={() => navigate('/providers')} active={location.pathname === '/providers' || location.pathname.startsWith('/provider/')} />
-            <NavItem icon={MapPin} label="Lieux" onClick={() => navigate('/facilities')} active={location.pathname === '/facilities' || location.pathname.startsWith('/facility/')} />
-            <NavItem icon={MessageSquare} label="Chat" onClick={() => navigate('/chat')} active={location.pathname === '/chat'} />
-            <NavItem icon={User} label="Profil" onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
+            {isProvider ? (
+              <>
+                <NavItem icon={Stethoscope} label="Dashboard" onClick={() => navigate('/dashboard')} active={location.pathname === '/dashboard'} />
+                <NavItem icon={MessageSquare} label="Chat" onClick={() => navigate('/chat')} active={location.pathname === '/chat'} />
+                <NavItem icon={User} label="Profil" onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
+              </>
+            ) : (
+              <>
+                <NavItem icon={Stethoscope} label="Annuaire" onClick={() => navigate('/providers')} active={location.pathname === '/providers' || location.pathname.startsWith('/provider/')} />
+                <NavItem icon={MapPin} label="Lieux" onClick={() => navigate('/facilities')} active={location.pathname === '/facilities' || location.pathname.startsWith('/facility/')} />
+                <NavItem icon={MessageSquare} label="Chat" onClick={() => navigate('/chat')} active={location.pathname === '/chat'} />
+                <NavItem icon={User} label="Profil" onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
+              </>
+            )}
           </div>
         </nav>
       )}
