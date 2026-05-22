@@ -58,6 +58,14 @@ export function useFacility(id: string) {
   });
 }
 
+export function useFacilityStock(id: string, q?: string) {
+  return useQuery({
+    queryKey: ['facility-stock', id, q],
+    queryFn: () => facilities.stock(id, q),
+    enabled: !!id,
+  });
+}
+
 /* ---------- Appointments ---------- */
 export function useMyAppointments() {
   return useQuery({
