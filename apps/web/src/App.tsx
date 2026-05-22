@@ -17,6 +17,8 @@ import { SearchPage } from './pages/SearchPage';
 import { PatientRegister } from './pages/PatientRegister';
 import { Profile } from './pages/Profile';
 
+import { ProviderDashboard } from './pages/ProviderDashboard';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 3 * 60 * 1000, retry: 1 },
@@ -67,6 +69,7 @@ function AuthGate() {
             <Route path="/chat" element={<AuthOrGuest><Chat /></AuthOrGuest>} />
             <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
             <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
+            <Route path="/dashboard" element={<AuthOrGuest><ProviderDashboard /></AuthOrGuest>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

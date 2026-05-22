@@ -180,6 +180,8 @@ export interface Appointment {
   notes: string | null;
   providerName?: string | null;
   facilityName?: string | null;
+  patientName?: string | null;
+  patientPhone?: string | null;
   rescheduleRequestedBy?: string | null;
   rescheduleRequestedAt?: string | null;
   rescheduleReason?: string | null;
@@ -212,7 +214,7 @@ export const appointments = {
   mine: () =>
     api<{ data: Appointment[] }>('/appointments/me'),
   listForProvider: () =>
-    api<{ data: AppointmentsByDay[] }>('/appointments/provider'),
+    api<{ data: Appointment[]; pagination: { limit: number; offset: number; count: number } }>('/appointments/provider'),
   get: (id: string) =>
     api<{ data: Appointment }>(`/appointments/${id}`),
   availableSlots: (providerId: string, date: string) =>
