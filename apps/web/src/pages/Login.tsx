@@ -11,6 +11,7 @@ export function Login() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('+237');
   const [otp, setOtp] = useState('');
+  const [role, setRole] = useState<string>('patient');
 
   const req = useRequestOtp();
   const verify = useVerifyOtp();
@@ -24,7 +25,7 @@ export function Login() {
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    verify.mutate({ phone, code: otp }, {
+    verify.mutate({ phone, code: otp, role }, {
       onSuccess: (data) => {
         setAuth(data);
         if (!data.isProfileComplete) {
@@ -61,6 +62,35 @@ export function Login() {
                 required
               />
             </label>
+
+            <div className="flex flex-col space-y-2">
+              <span className="text-sm font-medium text-gray-700">Je suis :</span>
+              <div className="flex space-x-2">
+                <label className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${role === 'patient' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="patient"
+                    checked={role === 'patient'}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="sr-only"
+                  />
+                  Patient(e)
+                </label>
+                <label className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${role === 'doctor' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="doctor"
+                    checked={role === 'doctor'}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="sr-only"
+                  />
+                  Professionnel de santé
+                </label>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={req.isPending}

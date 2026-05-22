@@ -35,7 +35,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 /* ---------- Auth ---------- */
 export interface RequestOtpBody { phone: string }
-export interface VerifyOtpBody { phone: string; code: string }
+export interface VerifyOtpBody { phone: string; code: string; role?: string }
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
