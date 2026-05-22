@@ -32,6 +32,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Chat
   SELF_CONVERSATION: "Vous ne pouvez pas démarrer une conversation avec vous-même.",
   CONVERSATION_EXISTS: "Cette conversation existe déjà.",
+  INVALID_PARTICIPANTS: "Le chat nécessite un patient et un soignant.",
+  BAD_REQUEST: "Requête invalide. Vérifiez les données envoyées.",
 
   // Prescriptions
   RECORD_NOT_FOUND: "Dossier de consultation introuvable.",
@@ -43,9 +45,6 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // SOS
   MISSING_COORDS: "Coordonnées GPS manquantes.",
   ALREADY_HANDLED: "Cette demande d'urgence a déjà été traitée.",
-
-  // Admin
-  BAD_REQUEST: "Requête invalide. Vérifiez les données envoyées.",
 };
 
 /**

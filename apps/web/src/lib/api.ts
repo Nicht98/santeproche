@@ -236,16 +236,21 @@ export const appointments = {
 /* ---------- Chat ---------- */
 export interface Conversation {
   id: string;
-  title: string;
+  subject?: string;
+  otherPartyName?: string;
+  otherPartyPhone?: string;
   lastMessage?: string;
   lastMessageAt?: string;
   patientId?: string;
   providerId?: string;
+  patientUnreadCount?: number;
+  providerUnreadCount?: number;
 }
 export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
+  senderName?: string;
   content: string;
   createdAt: string;
 }
