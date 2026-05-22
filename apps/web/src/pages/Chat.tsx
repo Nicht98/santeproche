@@ -46,7 +46,8 @@ export function Chat() {
 
   useEffect(() => {
     if (!accessToken) return;
-    const wsUrl = new URL('/ws/chat', window.location.origin);
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined || window.location.origin).replace(/\/api\/v1\/?$/, '');
+    const wsUrl = new URL('/ws/chat', apiBase);
     wsUrl.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     wsUrl.searchParams.set('token', accessToken);
     const ws = new WebSocket(wsUrl.toString());
