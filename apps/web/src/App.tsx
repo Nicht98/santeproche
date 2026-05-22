@@ -18,6 +18,7 @@ import { PatientRegister } from './pages/PatientRegister';
 import { Profile } from './pages/Profile';
 
 import { ProviderDashboard } from './pages/ProviderDashboard';
+import { ProviderRegister } from './pages/ProviderRegister';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,24 +26,39 @@ const queryClient = new QueryClient({
   },
 });
 
-/* Allow guest users for public pages, redirect guests to /login for protected pages */
+/* Generic auth guard: guests allowed on public pages, auth required on protected */
+/* Allows incomplete profiles to pass through (caller handles profile redirect) */
 function AuthOrGuest({ children, allowGuest = false }: { children: React.ReactNode; allowGuest?: boolean }) {
-  const { isAuthenticated, isProfileComplete, isGuest } = useAuthStore();
+  const { isAuthenticated, isGuest } = useAuthStore();
 
-  // Fully authenticated + profile complete → OK
-  if (isAuthenticated && isProfileComplete) return <>{children}</>;
-
-  // Incomplete profile → force registration
-  if (isAuthenticated && !isProfileComplete) return <Navigate to="/register/patient" replace />;
-
-  // Guest on public route → OK
+  if (isAuthenticated) return <>{children}</>;
   if (isGuest && allowGuest) return <>{children}</>;
-
-  // Guest on protected route → login
   if (isGuest && !allowGuest) return <Navigate to="/login" replace />;
-
-  // Not logged in at all → login
   return <Navigate to="/login" replace />;
+}
+
+/* Patient-only guard: redirect providers away from patient routes */
+function PatientOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isProfileComplete, isProvider, isGuest } = useAuthStore();
+
+  if (isGuest) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (isProvider && !isProfileComplete) return <Navigate to="/register/provider" replace />;
+  if (isProvider) return <Navigate to="/dashboard" replace />;
+  if (!isProfileComplete) return <Navigate to="/register/patient" replace />;
+  return <>{children}</>;
+}
+
+/* Provider-only guard: redirect patients away from provider routes */
+function ProviderOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isProfileComplete, isPatient, isGuest } = useAuthStore();
+
+  if (isGuest) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (isPatient && !isProfileComplete) return <Navigate to="/register/patient" replace />;
+  if (isPatient) return <Navigate to="/" replace />;
+  if (!isProfileComplete) return <Navigate to="/register/provider" replace />;
+  return <>{children}</>;
 }
 
 function AuthGate() {
@@ -54,6 +70,7 @@ function AuthGate() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register/patient" element={<PatientRegister />} />
+          <Route path="/register/provider" element={<ProviderRegister />} />
           <Route element={<Layout />}>
             {/* Public routes (guest OK) */}
             <Route path="/" element={<AuthOrGuest allowGuest><Home /></AuthOrGuest>} />
@@ -62,14 +79,19 @@ function AuthGate() {
             <Route path="/facilities" element={<AuthOrGuest allowGuest><Facilities /></AuthOrGuest>} />
             <Route path="/facility/:id" element={<AuthOrGuest allowGuest><FacilityDetail /></AuthOrGuest>} />
 
-            {/* Protected routes (auth required) */}
-            <Route path="/appointments" element={<AuthOrGuest><Appointments /></AuthOrGuest>} />
-            <Route path="/appointment/:id" element={<AuthOrGuest><AppointmentDetail /></AuthOrGuest>} />
-            <Route path="/book" element={<AuthOrGuest><Booking /></AuthOrGuest>} />
+            {/* Protected patient routes: patients only */}
+            <Route path="/appointments" element={<PatientOnly><Appointments /></PatientOnly>} />
+            <Route path="/appointment/:id" element={<PatientOnly><AppointmentDetail /></PatientOnly>} />
+            <Route path="/book" element={<PatientOnly><Booking /></PatientOnly>} />
+
+            {/* Protected shared routes */}
             <Route path="/chat" element={<AuthOrGuest><Chat /></AuthOrGuest>} />
             <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
             <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
-            <Route path="/dashboard" element={<AuthOrGuest><ProviderDashboard /></AuthOrGuest>} />
+
+            {/* Protected provider routes: providers only */}
+            <Route path="/dashboard" element={<ProviderOnly><ProviderDashboard /></ProviderOnly>} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

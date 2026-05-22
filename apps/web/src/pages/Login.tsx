@@ -28,9 +28,13 @@ export function Login() {
       onSuccess: (data) => {
         setAuth(data);
         if (!data.isProfileComplete) {
-          navigate('/register/patient');
+          // Provider goes to provider registration, patient to patient registration
+          const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
+          navigate(isProviderRole ? '/register/provider' : '/register/patient');
         } else {
-          navigate('/');
+          // Provider goes to dashboard, patient to home
+          const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
+          navigate(isProviderRole ? '/dashboard' : '/');
         }
       },
     });

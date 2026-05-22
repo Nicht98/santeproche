@@ -8,12 +8,16 @@ export type AuthState = {
   isProfileComplete: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;
+  isProvider: boolean;
+  isPatient: boolean;
   setAuth: (payload: AuthResponse) => void;
   completeProfile: () => void;
   logout: () => void;
   hydrate: () => void;
   loginAsGuest: () => void;
 };
+
+export const PROVIDER_ROLES = new Set(['doctor', 'pharmacist', 'clinic_admin', 'hospital_admin', 'admin']);
 
 const stored = (() => {
   try {
@@ -27,6 +31,8 @@ const isGuestStored = (() => {
   try { return localStorage.getItem('auth_guest') === '1'; } catch { return false; }
 })();
 
+const isProviderStored = stored?.user?.role ? PROVIDER_ROLES.has(stored.user.role) : false;
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: stored?.user ?? null,
   accessToken: stored?.accessToken ?? null,
@@ -34,12 +40,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   isProfileComplete: stored?.isProfileComplete ?? false,
   isAuthenticated: !!stored?.accessToken,
   isGuest: isGuestStored,
+  isProvider: isProviderStored,
+  isPatient: stored?.user?.role === 'patient' || !stored?.user?.role,
 
   setAuth: (payload) => {
     localStorage.setItem('auth', JSON.stringify(payload));
     localStorage.setItem('accessToken', payload.accessToken);
     localStorage.setItem('refreshToken', payload.refreshToken);
     localStorage.removeItem('auth_guest');
+    const isProvider = !!payload.user?.role && PROVIDER_ROLES.has(payload.user.role);
     set({
       user: payload.user,
       accessToken: payload.accessToken,
@@ -47,6 +56,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       isProfileComplete: payload.isProfileComplete,
       isAuthenticated: true,
       isGuest: false,
+      isProvider,
+      isPatient: payload.user?.role === 'patient',
     });
   },
 
@@ -68,7 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('auth_guest');
-    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false });
+    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false, isProvider: false, isPatient: false });
   },
 
   hydrate: () => {
