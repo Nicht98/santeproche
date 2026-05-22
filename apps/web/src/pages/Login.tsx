@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Smartphone, UserCircle, ArrowRight, Heart, Stethoscope } from 'lucide-react';
 import { useRequestOtp, useVerifyOtp } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
-import { Card } from '../components/ui';
 import { formatError } from '../lib/errors';
 
 export function Login() {
@@ -19,9 +19,7 @@ export function Login() {
 
   const handleRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    req.mutate({ phone }, {
-      onSuccess: () => setStep('otp'),
-    });
+    req.mutate({ phone }, { onSuccess: () => setStep('otp') });
   };
 
   const handleVerify = (e: React.FormEvent) => {
@@ -29,13 +27,10 @@ export function Login() {
     verify.mutate({ phone, code: otp, role }, {
       onSuccess: (data) => {
         setAuth(data);
+        const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
         if (!data.isProfileComplete) {
-          // Provider goes to provider registration, patient to patient registration
-          const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
           navigate(isProviderRole ? '/register/provider' : '/register/patient');
         } else {
-          // Provider goes to dashboard, patient to home
-          const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
           navigate(isProviderRole ? '/dashboard' : '/');
         }
       },
@@ -43,122 +38,88 @@ export function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-brand-600">SantéProche</h1>
-          <p className="mt-1 text-sm text-gray-500">Accès santé facile</p>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="relative flex flex-1 flex-col items-center justify-center px-6 pb-8 pt-12">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500 shadow-glow-brand">
+            <Heart className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">SantéProche</h1>
+          <p className="mt-1 text-sm text-slate-500 text-balance">Accès santé simple et rapide près de chez vous</p>
         </div>
 
-        {step === 'phone' ? (
-          <form onSubmit={handleRequest} className="space-y-4">
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Numéro de téléphone</span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                placeholder="+2376XXXXXXXX"
-                required
-              />
-            </label>
-
-            <div className="flex flex-col space-y-2">
-              <span className="text-sm font-medium text-gray-700">Je suis :</span>
-              <div className="flex space-x-2">
-                <label className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${role === 'patient' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="patient"
-                    checked={role === 'patient'}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="sr-only"
-                  />
-                  Patient(e)
+        <div className="w-full max-w-sm animate-slide-up">
+          {step === 'phone' ? (
+            <form onSubmit={handleRequest} className="space-y-5">
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Numéro de téléphone</span>
+                  <div className="relative mt-1">
+                    <Smartphone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-field pl-10" placeholder="+2376XXXXXXXX" required />
+                  </div>
                 </label>
-                <label className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm ${role === 'doctor' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="doctor"
-                    checked={role === 'doctor'}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="sr-only"
-                  />
-                  Professionnel de santé
-                </label>
+
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-slate-700">Je suis</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${role === 'patient' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                      <UserCircle className="h-4 w-4" />
+                      <input type="radio" name="role" value="patient" checked={role === 'patient'} onChange={(e) => setRole(e.target.value)} className="sr-only" />
+                      Patient(e)
+                    </label>
+                    <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${role === 'doctor' ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                      <Stethoscope className="h-4 w-4" />
+                      <input type="radio" name="role" value="doctor" checked={role === 'doctor'} onChange={(e) => setRole(e.target.value)} className="sr-only" />
+                      Soignant
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={req.isPending}
-              className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-            >
-              {req.isPending ? 'Envoi…' : 'Recevoir un code'}
-            </button>
-
-            <div className="relative my-3">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-2 text-gray-400">ou</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => { loginAsGuest(); navigate('/'); }}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Continuer sans compte
-            </button>
-
-            {req.isError && (
-              <p className="text-xs text-red-600">{formatError(req.error)}</p>
-            )}
-          </form>
-        ) : (
-          <form onSubmit={handleVerify} className="space-y-4">
-            <p className="text-center text-xs text-gray-500">Un code a été envoyé à {phone}</p>
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Code de vérification</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                placeholder="123456"
-                required
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={verify.isPending}
-              className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-            >
-              {verify.isPending ? 'Vérification…' : 'Vérifier'}
-            </button>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                className="text-xs text-brand-600 underline"
-                onClick={() => setStep('phone')}
-              >
-                Changer de numéro
+              <button type="submit" disabled={req.isPending} className="btn-primary w-full py-3.5">
+                {req.isPending ? <span>Envoi en cours…</span> : <span className="flex items-center justify-center gap-2">Recevoir un code <ArrowRight className="h-4 w-4" /></span>}
               </button>
-            </div>
-            {verify.isError && (
-              <p className="text-xs text-red-600">{formatError(verify.error)}</p>
-            )}
-          </form>
-        )}
-      </Card>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-slate-50 px-3 text-slate-400">ou</span></div>
+              </div>
+
+              <button type="button" onClick={() => { loginAsGuest(); navigate('/'); }} className="btn-secondary w-full">Continuer sans compte</button>
+
+              {req.isError && <p className="rounded-xl bg-red-50 px-3 py-2 text-center text-xs text-red-600">{formatError(req.error)}</p>}
+            </form>
+          ) : (
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div className="text-center">
+                <p className="text-sm text-slate-500">Code envoyé à <span className="font-mono font-semibold text-slate-900">{phone}</span></p>
+              </div>
+
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Code de vérification</span>
+                <input type="text" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} className="input-field mt-1 text-center text-2xl font-mono tracking-[0.5em]" placeholder="------" required />
+              </label>
+
+              <button type="submit" disabled={verify.isPending} className="btn-primary w-full py-3.5">
+                {verify.isPending ? 'Vérification…' : 'Vérifier'}
+              </button>
+
+              <div className="flex justify-center">
+                <button type="button" className="text-sm font-medium text-brand-600 underline underline-offset-2 transition-colors hover:text-brand-700" onClick={() => setStep('phone')}>
+                  Changer de numéro
+                </button>
+              </div>
+
+              {verify.isError && <p className="rounded-xl bg-red-50 px-3 py-2 text-center text-xs text-red-600">{formatError(verify.error)}</p>}
+            </form>
+          )}
+        </div>
+      </div>
+
+      <div className="pb-6 text-center">
+        <p className="text-xs text-slate-400">En continuant, vous acceptez nos conditions d'utilisation</p>
+      </div>
     </div>
   );
 }
