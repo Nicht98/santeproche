@@ -14,6 +14,7 @@ const OtpRequestSchema = z.object({
 const OtpVerifySchema = z.object({
   phone: z.string(),
   code: z.string().length(6),
+  role: z.enum(['patient', 'doctor', 'pharmacist', 'clinic_admin', 'hospital_admin']).optional(),
 });
 
 function hashToken(token: string): string {
@@ -41,10 +42,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     let [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1);
 
     if (!user) {
+      const role = body.role ?? 'patient';
       const result = await db.insert(users).values({
         phone: body.phone,
         phoneVerified: true,
-        role: 'patient',
+        role: role as 'patient' | 'doctor' | 'pharmacist' | 'clinic_admin' | 'hospital_admin',
         status: 'active',
       }).returning();
       user = result[0];
