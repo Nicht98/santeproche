@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { eq, and, sql, ilike, inArray, gte, lte } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { db, query } from '../db/index.js';
 import { facilities, users, providerProfiles, cities, appointments, providerSchedules } from '../db/schema/index.js';
 
 const FacilityQuerySchema = z.object({
@@ -293,5 +293,55 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return { date, dayOfWeek, slots };
+  });
+
+  // GET /facilities/:id/stock — list drug stock for a facility
+  fastify.get('/facilities/:id/stock', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { q, limit = '50', offset = '0' } = request.query as Record<string, string>;
+
+    if (!id) {
+      return reply.code(400).send({ error: { code: 'MISSING_PARAMS', message: 'facility id required' } });
+    }
+
+    const l = Math.min(parseInt(limit, 10), 100);
+    const os = parseInt(offset, 10);
+    const searchQ = q ? q.trim() : '';
+
+    let stockQuery;
+    let params;
+
+    if (searchQ) {
+      stockQuery = `
+        SELECT ds.id, ds.facility_id, ds.drug_id, ds.quantity, ds.price_xaf, ds.is_available, ds.is_in_stock,
+               ds.location_in_store, ds.last_updated, ds.created_at,
+               d.name AS drug_name, d.generic_name, d.category, d.dosage, d.form, d.manufacturer
+        FROM drug_stock ds
+        JOIN drugs d ON ds.drug_id = d.id
+        WHERE ds.facility_id = $1
+          AND ds.is_available = true
+          AND (d.name ILIKE '%' || $2 || '%' OR d.generic_name ILIKE '%' || $2 || '%')
+        ORDER BY d.name
+        LIMIT $3 OFFSET $4
+      `;
+      params = [id, searchQ, l, os];
+    } else {
+      stockQuery = `
+        SELECT ds.id, ds.facility_id, ds.drug_id, ds.quantity, ds.price_xaf, ds.is_available, ds.is_in_stock,
+               ds.location_in_store, ds.last_updated, ds.created_at,
+               d.name AS drug_name, d.generic_name, d.category, d.dosage, d.form, d.manufacturer
+        FROM drug_stock ds
+        JOIN drugs d ON ds.drug_id = d.id
+        WHERE ds.facility_id = $1
+          AND ds.is_available = true
+        ORDER BY d.name
+        LIMIT $2 OFFSET $3
+      `;
+      params = [id, l, os];
+    }
+
+    const rows = await query(stockQuery, params);
+
+    return { data: rows, pagination: { limit: l, offset: os, count: rows.length } };
   });
 };
