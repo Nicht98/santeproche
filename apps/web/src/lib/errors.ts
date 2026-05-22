@@ -45,6 +45,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // SOS
   MISSING_COORDS: "Coordonnées GPS manquantes.",
   ALREADY_HANDLED: "Cette demande d'urgence a déjà été traitée.",
+
+  // Providers
+  ALREADY_VERIFIED: "Votre compte est déjà vérifié. Connectez-vous pour l'utiliser.",
+  ALREADY_PENDING: "Une demande est déjà en cours de vérification. Veuillez patienter.",
 };
 
 /**
