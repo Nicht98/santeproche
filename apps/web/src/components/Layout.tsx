@@ -10,17 +10,17 @@ export function Layout() {
   const isProvider = useAuthStore((s) => s.isProvider);
   const hideNav = location.pathname === '/login' || location.pathname.startsWith('/register');
 
-  // Only block nav if not authenticated AND not guest
-  const noNav = !isAuth && !isGuest;
-
-  // For guest mode, also block certain tabs (chat, profile, appointments, booking)
-  const isAuthRoute = ['/chat', '/profile', '/appointments', '/book'].some((p) =>
-    location.pathname.startsWith(p)
-  );
-
-  if (noNav && !hideNav && location.pathname !== '/') {
+  // Unauthenticated (not guest) → bare outlet, no nav wrapper
+  if (!isAuth && !isGuest && !hideNav) {
     return <Outlet />;
   }
+
+  // For guests: hide nav on pages that require auth (they'll be redirected to login)
+  const isGuestAuthRoute =
+    isGuest &&
+    ['/chat', '/profile', '/appointments', '/book'].some((p) =>
+      location.pathname.startsWith(p)
+    );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,7 +28,8 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {!hideNav && !isAuthRoute && (
+      {/* Bottom nav visible for authenticated users everywhere, for guests only on public pages */}
+      {!hideNav && !isGuestAuthRoute && (
         <nav className="fixed bottom-0 left-0 right-0 border-t bg-white">
           <div className="mx-auto flex max-w-lg justify-around py-1">
             <NavItem icon={Home} label="Accueil" onClick={() => navigate('/')} active={location.pathname === '/'} />
