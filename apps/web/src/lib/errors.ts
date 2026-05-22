@@ -49,6 +49,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Providers
   ALREADY_VERIFIED: "Votre compte est déjà vérifié. Connectez-vous pour l'utiliser.",
   ALREADY_PENDING: "Une demande est déjà en cours de vérification. Veuillez patienter.",
+
+  // Account status
+  ACCOUNT_REJECTED: "Votre inscription a été refusée. Vous ne pouvez plus utiliser cette application.",
+  ACCOUNT_SUSPENDED: "Votre compte est suspendu. Contactez l'administrateur.",
 };
 
 /**

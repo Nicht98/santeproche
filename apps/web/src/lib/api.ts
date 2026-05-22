@@ -21,6 +21,12 @@ class ApiClientError extends Error {
   }
 }
 
+/* ---------- Global account-status callback (for rejected/suspended) ---------- */
+let onAccountBlockedCallback: (() => void) | null = null;
+export function setOnAccountBlocked(fn: () => void) {
+  onAccountBlockedCallback = fn;
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('accessToken');
   const res = await fetch(`${API_BASE}${path}`, {
@@ -38,6 +44,12 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     const src = body?.error && typeof body.error === 'object' ? body.error : body;
     const code = src?.code ?? `HTTP_${res.status}`;
     const message = src?.message ?? res.statusText;
+
+    // If account is rejected/suspended → trigger global logout + redirect
+    if (code === 'ACCOUNT_REJECTED' || code === 'ACCOUNT_SUSPENDED') {
+      onAccountBlockedCallback?.();
+    }
+
     throw new ApiClientError(res.status, {
       code,
       message,

@@ -50,6 +50,10 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         status: 'active',
       }).returning();
       user = result[0];
+    } else if (user.status === 'rejected') {
+      return reply.status(403).send({ error: { code: 'ACCOUNT_REJECTED', message: "Votre inscription a été refusée. Vous ne pouvez plus utiliser cette application." } });
+    } else if (user.status === 'suspended') {
+      return reply.status(403).send({ error: { code: 'ACCOUNT_SUSPENDED', message: "Votre compte est suspendu. Contactez l'administrateur." } });
     } else if (!user.phoneVerified) {
       // Update phone_verified if it was false
       const result = await db.update(users)
@@ -110,6 +114,13 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const [user] = await db.select().from(users).where(eq(users.id, decoded.id)).limit(1);
       if (!user) return reply.code(401).send({ error: { code: 'UNAUTHORIZED' } });
+
+      if (user.status === 'rejected') {
+        return reply.code(403).send({ error: { code: 'ACCOUNT_REJECTED', message: "Votre inscription a été refusée. Vous ne pouvez plus utiliser cette application." } });
+      }
+      if (user.status === 'suspended') {
+        return reply.code(403).send({ error: { code: 'ACCOUNT_SUSPENDED', message: "Votre compte est suspendu. Contactez l'administrateur." } });
+      }
 
       // Rotate: revoke old token, issue new one
       await db.update(refreshTokens).set({ revoked: true }).where(eq(refreshTokens.id, stored.id));

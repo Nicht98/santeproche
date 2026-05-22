@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuthStore } from './stores/auth';
+import { setOnAccountBlocked } from './lib/api';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Home } from './pages/Home';
@@ -63,43 +64,59 @@ function ProviderOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function InnerApp() {
+  const navigate = useNavigate();
+  const logout = useAuthStore((s) => s.logout);
+
+  useEffect(() => {
+    setOnAccountBlocked(() => {
+      logout();
+      navigate('/login', { replace: true });
+    });
+  }, [logout, navigate]);
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register/patient" element={<PatientRegister />} />
+      <Route path="/register/provider" element={<ProviderRegister />} />
+      <Route element={<Layout />}>
+        {/* Public routes (guest OK) */}
+        <Route path="/" element={<AuthOrGuest allowGuest><Home /></AuthOrGuest>} />
+        <Route path="/providers" element={<AuthOrGuest allowGuest><Providers /></AuthOrGuest>} />
+        <Route path="/provider/:id" element={<AuthOrGuest allowGuest><ProviderDetail /></AuthOrGuest>} />
+        <Route path="/facilities" element={<AuthOrGuest allowGuest><Facilities /></AuthOrGuest>} />
+        <Route path="/facility/:id" element={<AuthOrGuest allowGuest><FacilityDetail /></AuthOrGuest>} />
+        <Route path="/nearby" element={<AuthOrGuest allowGuest><NearbyPage /></AuthOrGuest>} />
+
+        {/* Protected patient routes: patients only */}
+        <Route path="/appointments" element={<PatientOnly><Appointments /></PatientOnly>} />
+        <Route path="/appointment/:id" element={<PatientOnly><AppointmentDetail /></PatientOnly>} />
+        <Route path="/book" element={<PatientOnly><Booking /></PatientOnly>} />
+
+        {/* Protected shared routes */}
+        <Route path="/chat" element={<AuthOrGuest><Chat /></AuthOrGuest>} />
+        <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
+        <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
+
+        {/* Admin routes (no guard, secret-based) */}
+        <Route path="/admin" element={<AdminPanel />} />
+
+        <Route path="/dashboard" element={<ProviderOnly><ProviderDashboard /></ProviderOnly>} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
 function AuthGate() {
   const hydrate = useAuthStore((s) => s.hydrate);
   useEffect(() => { hydrate(); }, [hydrate]);
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/patient" element={<PatientRegister />} />
-          <Route path="/register/provider" element={<ProviderRegister />} />
-          <Route element={<Layout />}>
-            {/* Public routes (guest OK) */}
-            <Route path="/" element={<AuthOrGuest allowGuest><Home /></AuthOrGuest>} />
-            <Route path="/providers" element={<AuthOrGuest allowGuest><Providers /></AuthOrGuest>} />
-            <Route path="/provider/:id" element={<AuthOrGuest allowGuest><ProviderDetail /></AuthOrGuest>} />
-            <Route path="/facilities" element={<AuthOrGuest allowGuest><Facilities /></AuthOrGuest>} />
-            <Route path="/facility/:id" element={<AuthOrGuest allowGuest><FacilityDetail /></AuthOrGuest>} />
-            <Route path="/nearby" element={<AuthOrGuest allowGuest><NearbyPage /></AuthOrGuest>} />
-
-            {/* Protected patient routes: patients only */}
-            <Route path="/appointments" element={<PatientOnly><Appointments /></PatientOnly>} />
-            <Route path="/appointment/:id" element={<PatientOnly><AppointmentDetail /></PatientOnly>} />
-            <Route path="/book" element={<PatientOnly><Booking /></PatientOnly>} />
-
-            {/* Protected shared routes */}
-            <Route path="/chat" element={<AuthOrGuest><Chat /></AuthOrGuest>} />
-            <Route path="/search" element={<AuthOrGuest allowGuest><SearchPage /></AuthOrGuest>} />
-            <Route path="/profile" element={<AuthOrGuest><Profile /></AuthOrGuest>} />
-
-            {/* Admin routes (no guard, secret-based) */}
-            <Route path="/admin" element={<AdminPanel />} />
-
-            <Route path="/dashboard" element={<ProviderOnly><ProviderDashboard /></ProviderOnly>} />
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+        <InnerApp />
       </BrowserRouter>
     </QueryClientProvider>
   );

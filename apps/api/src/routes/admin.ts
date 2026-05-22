@@ -104,12 +104,18 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await db.update(providerProfiles)
-      .set({ kycStatus: verdict, kycRejectionReason: verdict === 'rejected' ? reason : undefined })
+      .set({ kycStatus: verdict, kycRejectionReason: verdict === 'rejected' ? reason || null : null })
       .where(eq(providerProfiles.userId, userId));
 
     if (verdict === 'verified') {
       await db.update(users)
         .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
+
+    if (verdict === 'rejected') {
+      await db.update(users)
+        .set({ status: 'rejected', updatedAt: new Date() })
         .where(eq(users.id, userId));
     }
 
