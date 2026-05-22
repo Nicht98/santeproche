@@ -9,11 +9,15 @@ export interface ApiError {
 class ApiClientError extends Error {
   code: string;
   status: number;
-  constructor(status: number, data: ApiError) {
+  details?: string[];
+  fields?: string[];
+  constructor(status: number, data: { code: string; message: string; details?: string[]; fields?: string[] }) {
     super(data.message);
     this.name = 'ApiClientError';
     this.code = data.code;
     this.status = status;
+    this.details = data.details;
+    this.fields = data.fields;
   }
 }
 
@@ -29,8 +33,17 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const data = (await res.json().catch(() => ({ message: res.statusText }))) as ApiError;
-    throw new ApiClientError(res.status, data);
+    const body = (await res.json().catch(() => ({ message: res.statusText }))) as Record<string, any>;
+    // Backend wraps errors as { error: { code, message, details? } }
+    const src = body?.error && typeof body.error === 'object' ? body.error : body;
+    const code = src?.code ?? `HTTP_${res.status}`;
+    const message = src?.message ?? res.statusText;
+    throw new ApiClientError(res.status, {
+      code,
+      message,
+      details: src?.details,
+      fields: src?.fields,
+    });
   }
 
   if (res.status === 204) return undefined as T;

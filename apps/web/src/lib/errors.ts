@@ -60,15 +60,18 @@ export function formatError(err: unknown): string {
   if (typeof err === "string") return err;
 
   if (err instanceof Error) {
-    // ApiClientError has a .code property
-    const code = (err as { code?: string }).code;
-    if (code && ERROR_MESSAGES[code]) {
-      return ERROR_MESSAGES[code];
+    const e = err as { code?: string; details?: string[]; message?: string };
+    // Try known code first
+    if (e.code && ERROR_MESSAGES[e.code]) {
+      return ERROR_MESSAGES[e.code];
     }
-    // Fall back to English server message if no mapping
-    return (
-      err.message && err.message.length > 0 ? err.message : "Une erreur est survenue."
-    );
+    // If there are field-level details, prepend a headline
+    if (e.details && Array.isArray(e.details) && e.details.length > 0) {
+      const first = e.details.slice(0, 3).join(' / ');
+      return first || "Veuillez corriger les erreurs indiquées.";
+    }
+    // Fall back to server message
+    if (e.message && e.message.length > 0) return e.message;
   }
 
   return "Une erreur est survenue.";

@@ -36,32 +36,39 @@ const FIELD_LABELS: Record<string, string> = {
 function parseApiError(err: any): { summary: string; fieldErrors: FieldError } {
   if (!err) return { summary: "Une erreur est survenue.", fieldErrors: {} };
 
-  // If error comes from Zod details array
-  if (err?.data?.details && Array.isArray(err.data.details)) {
+  // ApiClientError carries { message, code, details?, fields? } directly
+  const message = err.message as string | undefined;
+  const details = err.details as string[] | undefined;
+
+  // If error comes from Zod validation detail array
+  if (details && Array.isArray(details) && details.length > 0) {
+    // Check for simple string details (from old ApiClientError pattern)
     const fieldErrors: FieldError = {};
-    for (const item of err.data.details) {
-      const match = item.match(/^(.+?)\s*:\s*(.+)$/);
-      if (match) {
-        const label = match[1].trim();
-        const message = match[2].trim();
-        // Find field key by label
-        const key = Object.keys(FIELD_LABELS).find((k) => FIELD_LABELS[k] === label) || label;
-        fieldErrors[key] = message;
+    for (const item of details) {
+      if (typeof item === 'string') {
+        const match = item.match(/^(.+?)\s*:\s*(.+)$/);
+        if (match) {
+          const label = match[1].trim();
+          const msg = match[2].trim();
+          const key = Object.keys(FIELD_LABELS).find((k) => FIELD_LABELS[k] === label) || label;
+          fieldErrors[key] = msg;
+        }
       }
     }
-    return { summary: err.data.message || 'Veuillez corriger les erreurs ci-dessous.', fieldErrors };
+    if (Object.keys(fieldErrors).length > 0) {
+      return {
+        summary: message || 'Veuillez corriger les erreurs ci-dessous.',
+        fieldErrors,
+      };
+    }
   }
 
-  // If error has a message directly
-  if (err?.data?.message) {
-    return { summary: err.data.message, fieldErrors: {} };
+  // If error has a readable message directly (from ApiClientError)
+  if (message) {
+    return { summary: message, fieldErrors: {} };
   }
 
-  // If error is a string
-  if (typeof err === 'string') {
-    return { summary: err, fieldErrors: {} };
-  }
-
+  // Fallback
   return { summary: "Une erreur est survenue. Réessayez.", fieldErrors: {} };
 }
 
