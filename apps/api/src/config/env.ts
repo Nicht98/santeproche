@@ -20,6 +20,7 @@ const EnvSchema = z.object({
   KANNEL_SMS_PASS: z.string().optional(),
   RATE_LIMIT_MAX: z.string().default('100'),
   RATE_LIMIT_WINDOW: z.string().default('60000'),
+  ADMIN_SECRET: z.string().optional(),
 });
 
 export const env = EnvSchema.parse(process.env);

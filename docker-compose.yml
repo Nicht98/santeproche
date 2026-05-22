@@ -19,6 +19,7 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - JWT_SECRET=${JWT_SECRET:-changeme-in-production}
       - OTP_SECRET=${OTP_SECRET:-changeme}
+      - ADMIN_SECRET=${ADMIN_SECRET:-dev-admin-secret}
       - OSRM_URL=http://osrm-routed:5000
       - NOMINATIM_URL=http://nominatim:8080
       - KANNEL_URL=http://kannel:13013

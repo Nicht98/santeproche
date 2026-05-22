@@ -4,9 +4,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { users, providerProfiles } from '../db/schema/index.js';
 import { migrate } from '../db/migrate.js';
+import { env } from '../config/env.js';
 
-// Simple admin check -- in production, restrict to admin JWT or IP whitelist
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'dev-admin-secret';
+const ADMIN_SECRET = env.ADMIN_SECRET || 'dev-admin-secret';
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/health/db -- migration and DB state
