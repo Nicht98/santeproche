@@ -276,7 +276,7 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
         .where(eq(providerProfiles.userId, userId));
     }
 
-    return reply.code(201).send({ userId, status: 'pending_verification' });
+    return reply.code(201).send({ userId, status: 'pending_verification', kycStatus: 'pending' });
   });
 
   // POST /providers/facility (register facility)

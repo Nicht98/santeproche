@@ -43,11 +43,12 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     if (!user) {
       const role = body.role ?? 'patient';
+      const isProvider = ['doctor','pharmacist','clinic_admin','hospital_admin'].includes(role);
       const result = await db.insert(users).values({
         phone: body.phone,
         phoneVerified: true,
         role: role as 'patient' | 'doctor' | 'pharmacist' | 'clinic_admin' | 'hospital_admin',
-        status: 'active',
+        status: isProvider ? 'pending_verification' : 'active',
       }).returning();
       user = result[0];
     } else if (user.status === 'rejected') {
@@ -82,18 +83,24 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     let isProfileComplete = false;
+    let kycStatus: string | null = null;
     if (user) {
       if (user.role === 'patient') {
         const [profile] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, user.id)).limit(1);
         isProfileComplete = !!profile;
       } else {
-        // For providers: check providerProfiles exists
-        const [profile] = await db.select().from(providerProfiles).where(eq(providerProfiles.userId, user.id)).limit(1);
+        // For providers: check providerProfiles exists and kycStatus
+        const [profile] = await db
+          .select({ kycStatus: providerProfiles.kycStatus })
+          .from(providerProfiles)
+          .where(eq(providerProfiles.userId, user.id))
+          .limit(1);
         isProfileComplete = !!profile;
+        kycStatus = profile?.kycStatus ?? null;
       }
     }
 
-    return { accessToken, refreshToken, isProfileComplete, user: { id: user.id, phone: user.phone, role: user.role, displayName: user.displayName } };
+    return { accessToken, refreshToken, isProfileComplete, kycStatus, user: { id: user.id, phone: user.phone, role: user.role, displayName: user.displayName } };
   });
 
   // POST /auth/refresh
@@ -142,7 +149,22 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
         ipAddress: request.ip,
       });
 
-      return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+      let isProfileComplete = false;
+      let kycStatus: string | null = null;
+      if (user.role === 'patient') {
+        const [profile] = await db.select().from(patientProfiles).where(eq(patientProfiles.userId, user.id)).limit(1);
+        isProfileComplete = !!profile;
+      } else {
+        const [profile] = await db
+          .select({ kycStatus: providerProfiles.kycStatus })
+          .from(providerProfiles)
+          .where(eq(providerProfiles.userId, user.id))
+          .limit(1);
+        isProfileComplete = !!profile;
+        kycStatus = profile?.kycStatus ?? null;
+      }
+
+      return { accessToken: newAccessToken, refreshToken: newRefreshToken, isProfileComplete, kycStatus };
     } catch {
       return reply.code(401).send({ error: { code: 'UNAUTHORIZED' } });
     }
