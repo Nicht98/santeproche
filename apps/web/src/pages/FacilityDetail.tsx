@@ -88,7 +88,7 @@ export function FacilityDetail() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{item.drug_name}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{item.name ?? item.drug_name ?? 'Produit'}</p>
                 {item.generic_name && <p className="text-xs text-gray-500 truncate">{item.generic_name}</p>}
                 {item.dosage && <p className="text-[10px] text-gray-400">{item.dosage} · {item.form}</p>}
                 <div className="mt-0.5 flex items-center gap-2">
