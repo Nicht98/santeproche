@@ -125,6 +125,38 @@ await fastify.register(wsRoutes);
 // Error handler
 fastify.setErrorHandler((err, _req, reply) => {
   fastify.log.error(err);
+
+  // Zod validation error → user-friendly BAD_REQUEST
+  if (err.name === 'ZodError' && Array.isArray((err as any).issues)) {
+    const issues = (err as any).issues as Array<{ path: (string | number)[]; message: string; code: string }>;
+    const fields = issues.map((i) => i.path.join('.'));
+
+    // Per-field friendly French messages
+    const fieldMessages = issues.map((i) => {
+      const field = i.path.join('.');
+      const label = FIELD_LABELS[field] || field;
+      switch (i.code) {
+        case 'too_small': return `Le champ "${label}" est trop court.`;
+        case 'too_big': return `Le champ "${label}" est trop long.`;
+        case 'invalid_string':
+          if (field === 'phone') return `"${label}" doit commencer par +237 suivi de 9 chiffres.`;
+          return `"${label}" n'est pas valide.`;
+        case 'invalid_type': return `"${label}" n'est pas du bon type.`;
+        default: return `"${label}" n'est pas valide.`;
+      }
+    });
+
+    reply.status(400).send({
+      error: {
+        code: 'BAD_REQUEST',
+        message: fieldMessages[0],
+        fields,
+        details: fieldMessages,
+      },
+    });
+    return;
+  }
+
   reply.status(err.statusCode || 500).send({
     error: {
       code: err.code || 'INTERNAL_ERROR',
@@ -132,6 +164,36 @@ fastify.setErrorHandler((err, _req, reply) => {
     },
   });
 });
+
+const FIELD_LABELS: Record<string, string> = {
+  phone: 'Numéro de téléphone',
+  otp: 'Code OTP',
+  firstName: 'Prénom',
+  lastName: 'Nom',
+  displayName: 'Nom complet',
+  email: 'Adresse e-mail',
+  password: 'Mot de passe',
+  dateOfBirth: 'Date de naissance',
+  emergencyContactName: 'Contact d\'urgence',
+  emergencyContactPhone: 'Téléphone d\'urgence',
+  address: 'Adresse',
+  city: 'Ville',
+  reason: 'Motif',
+  notes: 'Notes',
+  content: 'Contenu',
+  providerId: 'Identifiant du soignant',
+  facilityId: 'Identifiant de l\'établissement',
+  scheduledAt: 'Date et heure',
+  status: 'Statut',
+  type: 'Type',
+  kind: 'Type',
+  name: 'Nom',
+  lat: 'Latitude',
+  lng: 'Longitude',
+  radiusKm: 'Rayon (km)',
+  title: 'Titre',
+  subject: 'Sujet',
+};
 
 const port = parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || '0.0.0.0';
