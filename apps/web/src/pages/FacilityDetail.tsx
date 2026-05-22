@@ -12,7 +12,7 @@ export function FacilityDetail() {
   const { data: stockData, isLoading: stockLoading } = useFacilityStock(id!, searchQ);
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !data) return <div className="p-4"><ErrorBanner message={(error as Error)?.message} onRetry={refetch} /></div>;
+  if (error || !data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
 
   const f = data.data;
   const iconMap: Record<string, typeof Pill> = { pharmacy: Pill, hospital: Stethoscope, clinic: Stethoscope };

@@ -8,6 +8,7 @@ import { useFacilities } from '../hooks/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useLocationStore } from '../stores/location';
 import { Card, EmptyState } from '../components/ui';
+import { formatError } from '../lib/errors';
 
 type Kind = 'all' | 'pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center';
 
@@ -145,7 +146,7 @@ export function NearbyPage() {
       {/* Error */}
       {error && (
         <div className="mx-4 rounded-lg bg-red-50 p-3 text-xs text-red-600">
-          {(error as Error)?.message}
+          {formatError(error)}
         </div>
       )}
 

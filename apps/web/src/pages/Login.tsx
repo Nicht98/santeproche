@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRequestOtp, useVerifyOtp } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
 import { Card } from '../components/ui';
+import { formatError } from '../lib/errors';
 
 export function Login() {
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ export function Login() {
             </button>
 
             {req.isError && (
-              <p className="text-xs text-red-600">{(req.error as Error)?.message || 'Erreur'}</p>
+              <p className="text-xs text-red-600">{formatError(req.error)}</p>
             )}
           </form>
         ) : (
@@ -153,7 +154,7 @@ export function Login() {
               </button>
             </div>
             {verify.isError && (
-              <p className="text-xs text-red-600">{(verify.error as Error)?.message || 'Erreur'}</p>
+              <p className="text-xs text-red-600">{formatError(verify.error)}</p>
             )}
           </form>
         )}

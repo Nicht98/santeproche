@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarPlus, Calendar, Circle } from 'lucide-react';
 import { useMyAppointments, useCancelAppointment } from '../hooks/api';
 import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { formatError } from '../lib/errors';
 import type { Appointment } from '../lib/api';
 
 function StatusBadge({ status }: { status: Appointment['status'] }) {
@@ -68,7 +69,7 @@ export function Appointments() {
         ))}
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{(error as Error)?.message}</div>}
+      {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{formatError(error)}</div>}
 
       <div className="space-y-2 pb-6">
         {filtered.map((apt) => {

@@ -7,9 +7,13 @@ export interface ApiError {
 }
 
 class ApiClientError extends Error {
-  constructor(public status: number, public data: ApiError) {
+  code: string;
+  status: number;
+  constructor(status: number, data: ApiError) {
     super(data.message);
     this.name = 'ApiClientError';
+    this.code = data.code;
+    this.status = status;
   }
 }
 

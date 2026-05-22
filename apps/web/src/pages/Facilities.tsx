@@ -4,6 +4,7 @@ import { MapPin, Pill, Stethoscope, Search, ArrowRight, Crosshair } from 'lucide
 import { useFacilities } from '../hooks/api';
 import { useLocationStore } from '../stores/location';
 import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { formatError } from '../lib/errors';
 import { LocationBanner } from '../components/LocationBanner';
 
 export function Facilities() {
@@ -79,7 +80,7 @@ export function Facilities() {
         ))}
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{(error as Error)?.message}</div>}
+      {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{formatError(error)}</div>}
 
       <div className="space-y-2 pb-6">
         {data?.data?.map((f) => {

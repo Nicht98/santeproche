@@ -30,7 +30,7 @@ export function AppointmentDetail() {
   const update = useUpdateAppointmentStatus();
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !data) return <div className="p-4"><ErrorBanner message={(error as Error)?.message} onRetry={refetch} /></div>;
+  if (error || !data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
 
   const a = data.data;
   const date = new Date(a.scheduledAt);

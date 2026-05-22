@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { formatError } from '../lib/errors';
 
 export function LoadingScreen() {
   return (
@@ -21,11 +22,12 @@ export function EmptyState({ icon: Icon, title, subtitle }: { icon: typeof Loade
   );
 }
 
-export function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
+export function ErrorBanner({ message, error, onRetry }: { message?: string; error?: unknown; onRetry?: () => void }) {
+  const display = message ?? formatError(error ?? null);
   return (
     <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
       <p className="font-medium">Erreur</p>
-      <p className="mt-1">{message}</p>
+      <p className="mt-1">{display}</p>
       {onRetry && (
         <button className="mt-2 text-sm font-medium text-red-700 underline" onClick={onRetry}>
           Réessayer

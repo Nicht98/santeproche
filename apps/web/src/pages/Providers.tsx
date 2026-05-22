@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Stethoscope, ArrowRight } from 'lucide-react';
 import { useProviders } from '../hooks/api';
-import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { Card, LoadingScreen, EmptyState, ErrorBanner } from '../components/ui';
 
 export function Providers() {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ export function Providers() {
         {days.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
       </select>
 
-      {error && <ErrorBanner message={(error as Error)?.message} onRetry={refetch} />}
+      {error && <ErrorBanner error={error} onRetry={refetch} />}
 
       <div className="space-y-2 pb-6">
         {data?.data?.map((p) => (
@@ -94,17 +94,6 @@ export function Providers() {
         ))}
         {!data?.data?.length && <EmptyState icon={Stethoscope} title="Aucun soignant trouvé" subtitle="Essayez d'autres filtres" />}
       </div>
-    </div>
-  );
-}
-
-function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">
-      {message}
-      {onRetry && (
-        <button onClick={onRetry} className="ml-2 font-medium underline">Réessayer</button>
-      )}
     </div>
   );
 }

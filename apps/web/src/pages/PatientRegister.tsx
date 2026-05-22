@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRegisterPatient } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
 import { Card } from '../components/ui';
+import { formatError } from '../lib/errors';
 
 export function PatientRegister() {
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export function PatientRegister() {
           >
             {register.isPending ? 'Enregistrement…' : 'Continuer'}
           </button>
-          {register.isError && <p className="text-xs text-red-600">{(register.error as Error)?.message}</p>}
+          {register.isError && <p className="text-xs text-red-600">{formatError(register.error)}</p>}
         </form>
       </Card>
     </div>

@@ -4,6 +4,7 @@ import { CalendarPlus, ArrowLeft } from 'lucide-react';
 import { useProvider } from '../hooks/api';
 import { useAvailableSlots, useCreateAppointment } from '../hooks/api';
 import { Card, LoadingScreen, ErrorBanner } from '../components/ui';
+import { formatError } from '../lib/errors';
 
 export function Booking() {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ export function Booking() {
             <div>
               <p className="mb-2 text-sm font-medium text-gray-700">Créneaux disponibles</p>
               {sLoading && <p className="text-xs text-gray-400">Chargement…</p>}
-              {sError && <ErrorBanner message={(sError as Error)?.message} />}
+              {sError && <ErrorBanner message={formatError(sError)} />}
               {slotsData && (
                 <div className="grid grid-cols-3 gap-2">
                   {slotsData.slots.filter((s) => s.available).map((s) => (
@@ -125,7 +126,7 @@ export function Booking() {
             <CalendarPlus className="h-4 w-4" />
             {create.isPending ? 'Création…' : 'Confirmer le rendez-vous'}
           </button>
-          {create.isError && <p className="text-xs text-red-600">{(create.error as Error)?.message}</p>}
+          {create.isError && <p className="text-xs text-red-600">{formatError(create.error)}</p>}
         </form>
       </Card>
     </div>
