@@ -53,6 +53,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     throw new ApiClientError(res.status, {
+      ...src,
       code,
       message,
       details: src?.details,
