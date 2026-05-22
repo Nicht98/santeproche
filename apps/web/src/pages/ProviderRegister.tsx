@@ -152,8 +152,9 @@ export function ProviderRegister() {
         method: 'POST',
         body: JSON.stringify(form),
       });
-      completeProfile();
-      setStep('done');
+      // After successful registration, mark profile complete with pending status
+      completeProfile({ kycStatus: 'pending' });
+      navigate('/pending-verification', { replace: true });
     } catch (err: any) {
       const { summary, fieldErrors: fe } = parseApiError(err);
       setError(summary);

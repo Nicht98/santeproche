@@ -10,8 +10,9 @@ export type AuthState = {
   isGuest: boolean;
   isProvider: boolean;
   isPatient: boolean;
+  kycStatus: string | null;
   setAuth: (payload: AuthResponse) => void;
-  completeProfile: () => void;
+  completeProfile: (opts?: { kycStatus?: string }) => void;
   logout: () => void;
   hydrate: () => void;
   loginAsGuest: () => void;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isGuest: isGuestStored,
   isProvider: isProviderStored,
   isPatient: stored?.user?.role === 'patient' || !stored?.user?.role,
+  kycStatus: stored?.kycStatus ?? null,
 
   setAuth: (payload) => {
     localStorage.setItem('auth', JSON.stringify(payload));
@@ -58,17 +60,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       isGuest: false,
       isProvider,
       isPatient: payload.user?.role === 'patient',
+      kycStatus: payload.kycStatus ?? null,
     });
   },
 
-  completeProfile: () => {
+  completeProfile: (opts?: { kycStatus?: string }) => {
     set((state) => {
-      const next = { ...state, isProfileComplete: true };
+      const next = { ...state, isProfileComplete: true, kycStatus: opts?.kycStatus ?? state.kycStatus };
       localStorage.setItem('auth', JSON.stringify({
         user: next.user,
         accessToken: next.accessToken,
         refreshToken: next.refreshToken,
         isProfileComplete: true,
+        kycStatus: next.kycStatus,
       }));
       return next;
     });
@@ -79,7 +83,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('auth_guest');
-    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false, isProvider: false, isPatient: false });
+    set({ user: null, accessToken: null, refreshToken: null, isProfileComplete: false, isAuthenticated: false, isGuest: false, isProvider: false, isPatient: false, kycStatus: null });
   },
 
   hydrate: () => {
@@ -99,6 +103,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   loginAsGuest: () => {
     localStorage.setItem('auth_guest', '1');
-    set({ isGuest: true, isAuthenticated: false, user: null, accessToken: null, refreshToken: null, isProfileComplete: false });
+    set({ isGuest: true, isAuthenticated: false, user: null, accessToken: null, refreshToken: null, isProfileComplete: false, kycStatus: null });
   },
 }));

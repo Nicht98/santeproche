@@ -30,6 +30,9 @@ export function Login() {
         const isProviderRole = data.user?.role && ['doctor','pharmacist','clinic_admin','hospital_admin','admin'].includes(data.user.role);
         if (!data.isProfileComplete) {
           navigate(isProviderRole ? '/register/provider' : '/register/patient');
+        } else if (isProviderRole && data.kycStatus !== 'verified') {
+          // Provider has profile but not yet admin-verified → show pending page
+          navigate('/pending-verification');
         } else {
           navigate(isProviderRole ? '/dashboard' : '/');
         }

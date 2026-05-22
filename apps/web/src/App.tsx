@@ -21,6 +21,7 @@ import { Profile } from './pages/Profile';
 
 import { ProviderDashboard } from './pages/ProviderDashboard';
 import { ProviderRegister } from './pages/ProviderRegister';
+import { PendingVerification } from './pages/PendingVerification';
 import { AdminPanel } from './pages/AdminPanel';
 
 const queryClient = new QueryClient({
@@ -52,15 +53,24 @@ function PatientOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/* Provider-only guard: redirect patients away from provider routes */
+/* Provider-only guard: redirect patients and unverified providers away from dashboard */
 function ProviderOnly({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isProfileComplete, isPatient, isGuest } = useAuthStore();
+  const { isAuthenticated, isProfileComplete, isProvider, kycStatus, isGuest } = useAuthStore();
 
   if (isGuest) return <Navigate to="/login" replace />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (isPatient && !isProfileComplete) return <Navigate to="/register/patient" replace />;
-  if (isPatient) return <Navigate to="/" replace />;
+  if (!isProvider) return <Navigate to="/" replace />;
   if (!isProfileComplete) return <Navigate to="/register/provider" replace />;
+  if (kycStatus !== 'verified') return <Navigate to="/pending-verification" replace />;
+  return <>{children}</>;
+}
+
+/* Block non-provider/guest from pending-verification page */
+function PendingOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isProvider, isGuest } = useAuthStore();
+  if (isGuest) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isProvider) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -75,11 +85,12 @@ function InnerApp() {
     });
   }, [logout, navigate]);
 
-  return (
+    return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register/patient" element={<PatientRegister />} />
       <Route path="/register/provider" element={<ProviderRegister />} />
+      <Route path="/pending-verification" element={<PendingOnly><PendingVerification /></PendingOnly>} />
       <Route element={<Layout />}>
         {/* Public routes (guest OK) */}
         <Route path="/" element={<AuthOrGuest allowGuest><Home /></AuthOrGuest>} />

@@ -69,6 +69,7 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   isProfileComplete: boolean;
+  kycStatus?: string | null;
   user: {
     id: string;
     phone: string;
