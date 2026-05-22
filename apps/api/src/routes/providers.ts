@@ -110,6 +110,12 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
         facilityPhone: facilities.phone,
         facilityLat: facilities.lat,
         facilityLng: facilities.lng,
+        resume: providerProfiles.resume,
+        experience: providerProfiles.experience,
+        workplaceName: providerProfiles.workplaceName,
+        workplaceAddress: providerProfiles.workplaceAddress,
+        workplaceLat: providerProfiles.workplaceLat,
+        workplaceLng: providerProfiles.workplaceLng,
       })
       .from(users)
       .innerJoin(providerProfiles, eq(users.id, providerProfiles.userId))
@@ -167,6 +173,12 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
         userId,
         jobTitle: body.jobTitle,
         licenseNumber: body.licenseNumber,
+        resume: body.resume,
+        experience: body.experience,
+        workplaceName: body.workplaceName,
+        workplaceAddress: body.workplaceAddress,
+        workplaceLat: body.workplaceLat,
+        workplaceLng: body.workplaceLng,
         kycStatus: 'pending',
         kycSubmittedAt: new Date(),
       });
@@ -175,6 +187,12 @@ export const providerRoutes: FastifyPluginAsync = async (fastify) => {
         .set({
           jobTitle: body.jobTitle,
           licenseNumber: body.licenseNumber,
+          resume: body.resume,
+          experience: body.experience,
+          workplaceName: body.workplaceName,
+          workplaceAddress: body.workplaceAddress,
+          workplaceLat: body.workplaceLat,
+          workplaceLng: body.workplaceLng,
           kycStatus: 'pending',
           kycSubmittedAt: new Date(),
         })
