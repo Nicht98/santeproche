@@ -34,7 +34,7 @@ export function ProviderDetail() {
   const handleChat = () => {
     if (!isAuthenticated || !id) return navigate('/login');
     startChat.mutate(
-      { receiverId: id, title: p.displayName || 'Conversation' },
+      { providerId: id, title: p.displayName || 'Conversation' },
       {
         onSuccess: (res) => {
           navigate(`/chat?conversation=${res.conversation.id}`);

@@ -296,10 +296,10 @@ export const chat = {
       method: 'POST',
       body: JSON.stringify({ content: body.content, type: 'text' }),
     }),
-  start: (body: { receiverId: string; title?: string }) =>
+  start: (body: { providerId: string; title?: string }) =>
     api<{ status: string; conversation: Conversation }>('/conversations', {
       method: 'POST',
-      body: JSON.stringify({ receiverId: body.receiverId, title: body.title }),
+      body: JSON.stringify({ providerId: body.providerId, subject: body.title }),
     }),
 };
 
