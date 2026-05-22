@@ -104,6 +104,12 @@ export interface Provider {
   specialty: string | null;
   jobTitle: string | null;
   bio: string | null;
+  resume: string | null;
+  experience: string | null;
+  workplaceName: string | null;
+  workplaceAddress: string | null;
+  workplaceLat: string | null;
+  workplaceLng: string | null;
   facilityId: string | null;
   facilityName: string | null;
   facilityAddress: string | null;
