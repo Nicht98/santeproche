@@ -92,7 +92,7 @@ export function PendingVerification() {
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-500">Accès dashboard</p>
-              <p className="text-xs text-slate-400">Vous pourrez utiliser full-feature</p>
+              <p className="text-xs text-slate-400">Vous pourrez utiliser votre tableau de bord</p>
             </div>
           </div>
         </div>

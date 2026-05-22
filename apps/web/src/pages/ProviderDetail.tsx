@@ -39,6 +39,11 @@ export function ProviderDetail() {
         onSuccess: (res) => {
           navigate(`/chat?conversation=${res.conversation.id}`);
         },
+        onError: (err: any) => {
+          if (err?.code === 'CONVERSATION_EXISTS' && err?.extra?.conversationId) {
+            navigate(`/chat?conversation=${err.extra.conversationId}`);
+          }
+        },
       }
     );
   };

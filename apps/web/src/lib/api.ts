@@ -11,13 +11,15 @@ class ApiClientError extends Error {
   status: number;
   details?: string[];
   fields?: string[];
-  constructor(status: number, data: { code: string; message: string; details?: string[]; fields?: string[] }) {
+  extra?: Record<string, any>;
+  constructor(status: number, data: { code: string; message: string; details?: string[]; fields?: string[]; [key: string]: any }) {
     super(data.message);
     this.name = 'ApiClientError';
     this.code = data.code;
     this.status = status;
     this.details = data.details;
     this.fields = data.fields;
+    this.extra = data;
   }
 }
 
