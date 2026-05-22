@@ -9,9 +9,14 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     const { limit = '20', offset = '0' } = request.query as Record<string, string>;
 
     const convs = await query(`
-      SELECT c.*,
-        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as other_party_name,
-        CASE WHEN c.patient_id = $1 THEN u.phone ELSE p.phone END as other_party_phone
+      SELECT c.id, c.patient_id as patientId, c.provider_id as providerId,
+        c.facility_id as facilityId, c.subject, c.status,
+        c.patient_unread_count as patientUnreadCount,
+        c.provider_unread_count as providerUnreadCount,
+        c.last_message_at as lastMessageAt,
+        c.created_at as createdAt, c.updated_at as updatedAt,
+        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as otherPartyName,
+        CASE WHEN c.patient_id = $1 THEN u.phone ELSE p.phone END as otherPartyPhone
       FROM conversations c
       JOIN users u ON u.id = c.provider_id
       JOIN users p ON p.id = c.patient_id
@@ -34,7 +39,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Prevent starting conversation with self
     if (providerId === patientId) {
-      return reply.code(400).send({ error: { code: 'SELF_CONVERSATION', message: 'Vous ne pouvez pas démarrer une conversation avec vous-même.' } });
+      return reply.code(400).send({ error: { code: 'SELF_CONVERSATION', message: "Vous ne pouvez pas démarrer une conversation avec vous-même." } });
     }
 
     const [existing] = await query(
@@ -43,7 +48,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (existing) {
-      return reply.code(409).send({ error: { code: 'CONVERSATION_EXISTS', message: 'Cette conversation existe déjà.', conversationId: existing.id } });
+      return reply.code(409).send({ error: { code: 'CONVERSATION_EXISTS', message: "Cette conversation existe déjà.", conversationId: existing.id } });
     }
 
     const [conv] = await query(
@@ -61,8 +66,13 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     const userId = request.user.id;
 
     const [conv] = await query(
-      `SELECT c.*,
-        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as other_party_name
+      `SELECT c.id, c.patient_id as patientId, c.provider_id as providerId,
+        c.facility_id as facilityId, c.subject, c.status,
+        c.patient_unread_count as patientUnreadCount,
+        c.provider_unread_count as providerUnreadCount,
+        c.last_message_at as lastMessageAt,
+        c.created_at as createdAt, c.updated_at as updatedAt,
+        CASE WHEN c.patient_id = $1 THEN u.display_name ELSE p.display_name END as otherPartyName
       FROM conversations c
       JOIN users u ON u.id = c.provider_id
       JOIN users p ON p.id = c.patient_id
@@ -72,7 +82,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!conv) {
-      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Conversation introuvable.' } });
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: "Conversation introuvable." } });
     }
 
     return { data: conv };
@@ -91,11 +101,14 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!conv || (conv.patient_id !== userId && conv.provider_id !== userId)) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas voir cette conversation.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: "Vous ne pouvez pas voir cette conversation." } });
     }
 
     const messages = await query(
-      `SELECT m.*, u.display_name as sender_name, u.role as sender_role
+      `SELECT m.id, m.conversation_id as conversationId, m.sender_id as senderId,
+         m.type, m.content, m.is_edited as isEdited,
+         m.created_at as createdAt, m.updated_at as updatedAt,
+         u.display_name as senderName, u.role as senderRole
        FROM messages m
        JOIN users u ON u.id = m.sender_id
        WHERE m.conversation_id = $1
@@ -127,11 +140,13 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     if (!conv || (conv.patient_id !== userId && conv.provider_id !== userId)) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Vous ne pouvez pas envoyer de messages dans cette conversation.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: "Vous ne pouvez pas envoyer de messages dans cette conversation." } });
     }
 
     const [message] = await query(
-      'INSERT INTO messages (conversation_id, sender_id, type, content) VALUES ($1, $2, $3, $4) RETURNING *',
+      `INSERT INTO messages (conversation_id, sender_id, type, content) VALUES ($1, $2, $3, $4)
+       RETURNING id, conversation_id as conversationId, sender_id as senderId, type, content,
+                 is_edited as isEdited, created_at as createdAt, updated_at as updatedAt`,
       [id, userId, type, content]
     );
 
