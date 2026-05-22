@@ -22,7 +22,7 @@ export function ProviderDetail() {
   const startChat = useStartConversation();
 
   if (isLoading) return <LoadingScreen />;
-  if (error || !data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
+  if (error || !data || !data.data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
 
   const p = data.data;
 
@@ -80,7 +80,7 @@ export function ProviderDetail() {
               <h3 className="text-sm font-semibold">Horaires de consultation</h3>
             </div>
             <div className="space-y-1">
-              {p.schedules.map((sched) => (
+              {p.schedules.filter(Boolean).map((sched) => (
                 <div key={sched.id} className="flex items-center justify-between text-xs">
                   <span className="font-medium text-gray-700 w-24">{DAY_LABELS[sched.dayOfWeek] ?? sched.dayOfWeek}</span>
                   <span className="text-gray-600">
