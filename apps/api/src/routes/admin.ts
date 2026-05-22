@@ -4,16 +4,16 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { users, providerProfiles } from '../db/schema/index.js';
 import { migrate } from '../db/migrate.js';
-import { env } from '../config/env.js';
 
-const ADMIN_SECRET = env.ADMIN_SECRET || 'dev-admin-secret';
+// Simple admin check -- in production, restrict to admin JWT or IP whitelist
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'dev-admin-secret';
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /admin/health/db -- migration and DB state
   fastify.get('/admin/health/db', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
     }
 
     const pool = new Pool({
@@ -48,7 +48,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/admin/migrate', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
     }
 
     const result = await migrate();
@@ -64,7 +64,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/admin/providers/pending', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
     }
 
     const rows = await db
@@ -91,7 +91,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.patch('/admin/providers/:id/status', async (request, reply) => {
     const auth = request.headers['x-admin-secret'];
     if (auth !== ADMIN_SECRET) {
-      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Clé admin invalide.' } });
+      return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Invalid admin secret' } });
     }
 
     const body = request.body as any;
@@ -104,12 +104,18 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     await db.update(providerProfiles)
-      .set({ kycStatus: verdict, kycRejectionReason: verdict === 'rejected' ? reason : undefined })
+      .set({ kycStatus: verdict, kycRejectionReason: verdict === 'rejected' ? reason || null : null })
       .where(eq(providerProfiles.userId, userId));
 
     if (verdict === 'verified') {
       await db.update(users)
         .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
+
+    if (verdict === 'rejected') {
+      await db.update(users)
+        .set({ status: 'rejected', updatedAt: new Date() })
         .where(eq(users.id, userId));
     }
 

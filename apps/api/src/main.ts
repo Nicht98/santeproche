@@ -4,8 +4,11 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
+import { eq } from 'drizzle-orm';
 import { query } from './infra/db.js';
 import { redis } from './infra/redis.js';
+import { db } from './db/index.js';
+import { users } from './db/schema/index.js';
 import { authRoutes } from './routes/auth.js';
 import { facilityRoutes } from './routes/facilities.js';
 import { chatRoutes } from './routes/chat.js';
@@ -53,6 +56,27 @@ const metrics = {
 fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
   try {
     await request.jwtVerify();
+    const userId = (request.user as { id: string }).id;
+
+    // Check user status — reject suspended / rejected accounts
+    const [user] = await db
+      .select({ status: users.status })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Compte invalide ou supprimé.' } });
+    }
+
+    if (user.status === 'rejected') {
+      return reply.code(403).send({ error: { code: 'ACCOUNT_REJECTED', message: "Votre inscription a été refusée. Vous ne pouvez plus utiliser cette application." } });
+    }
+
+    if (user.status === 'suspended') {
+      return reply.code(403).send({ error: { code: 'ACCOUNT_SUSPENDED', message: "Votre compte est suspendu. Contactez l'administrateur." } });
+    }
+
   } catch (err) {
     reply.code(401).send({ error: { code: 'UNAUTHORIZED', message: 'Invalid or missing token' } });
   }
