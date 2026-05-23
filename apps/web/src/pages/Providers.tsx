@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Stethoscope, ArrowRight, X } from 'lucide-react';
+import { Search, Stethoscope, ArrowRight, X, Loader2 } from 'lucide-react';
 import { useProviders } from '../hooks/api';
-import { Card, LoadingScreen, EmptyState, ErrorBanner } from '../components/ui';
+import { Card, EmptyState, ErrorBanner } from '../components/ui';
 
 export function Providers() {
   const navigate = useNavigate();
@@ -86,7 +86,14 @@ export function Providers() {
     navigate(`/provider/${p.id}`);
   }
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading && !data) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-2 text-gray-400">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        <p className="text-sm">Chargement de l'annuaire…</p>
+      </div>
+    );
+  }
 
   const roles = [
     { value: '', label: 'Tous' },
@@ -207,6 +214,14 @@ export function Providers() {
       </div>
 
       {error && <ErrorBanner error={error} onRetry={refetch} />}
+
+      {/* Loading overlay on refetch (doesn't blank page) */}
+      {isLoading && data && (
+        <div className="flex items-center justify-center gap-2 py-2 text-xs text-gray-400">
+          <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+          Recherche en cours…
+        </div>
+      )}
 
       <div className="space-y-2 pb-6">
         {data?.data?.filter(Boolean)?.map((p) => (

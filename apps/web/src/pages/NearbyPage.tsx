@@ -73,8 +73,8 @@ export function NearbyPage() {
     </div>
   );
 
-  // Loading
-  if (geo.loading || isLoading) {
+  // Geo loading only — not data refetch
+  if (geo.loading) {
     return (
       <div className="space-y-4">
         {header}

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Pill, Stethoscope, Search, ArrowRight, Crosshair } from 'lucide-react';
+import { MapPin, Pill, Stethoscope, Search, ArrowRight, Crosshair, Loader2 } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
 import { useLocationStore } from '../stores/location';
-import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { Card, EmptyState } from '../components/ui';
 import { formatError } from '../lib/errors';
 import { LocationBanner } from '../components/LocationBanner';
 
@@ -23,7 +23,14 @@ export function Facilities() {
     ...(useGeo ? { lat, lng, radiusKm: 10 } : {}),
   });
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading && !data) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-2 text-gray-400">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        <p className="text-sm">Chargement des établissements…</p>
+      </div>
+    );
+  }
 
   const iconMap: Record<string, typeof Pill> = {
     pharmacy: Pill,
@@ -81,6 +88,13 @@ export function Facilities() {
       </div>
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">{formatError(error)}</div>}
+
+      {isLoading && data && (
+        <div className="flex items-center justify-center gap-2 py-2 text-xs text-gray-400">
+          <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+          Recherche en cours…
+        </div>
+      )}
 
       <div className="space-y-2 pb-6">
         {data?.data?.filter(Boolean)?.map((f) => {

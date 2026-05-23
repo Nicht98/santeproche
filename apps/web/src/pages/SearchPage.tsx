@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Stethoscope, ArrowRight, Pill, X } from 'lucide-react';
+import { Search, Stethoscope, ArrowRight, Pill, X, Loader2 } from 'lucide-react';
 import { useProviders, useFacilities } from '../hooks/api';
-import { Card, LoadingScreen, EmptyState } from '../components/ui';
+import { Card, EmptyState } from '../components/ui';
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -101,7 +101,14 @@ export function SearchPage() {
     navigate(item._type === 'provider' ? `/provider/${item.id}` : `/facility/${item.id}`);
   }
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading && !providersData && !facilitiesData) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-2 text-gray-400">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        <p className="text-sm">Chargement…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 p-4">
