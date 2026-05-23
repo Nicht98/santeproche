@@ -153,46 +153,51 @@ export function Providers() {
           </button>
         )}
 
-        {/* Autocomplete dropdown */}
-        {showDropdown && debouncedSearch && (
-          <div
-            ref={dropdownRef}
-            className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg"
-          >
-            {suggestions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">
-                Aucun résultat pour « {debouncedSearch} »
-              </div>
-            ) : (
-              <ul className="max-h-60 overflow-y-auto py-1">
-                {suggestions.map((p, i) => (
-                  <li key={p.id}>
-                    <button
-                      onClick={() => selectProvider(p)}
-                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-brand-50 ${
-                        i === highlightIndex ? 'bg-brand-50' : ''
-                      }`}
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
-                        {(p.displayName ?? '?').slice(0, 1).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-gray-900">
-                          {p.displayName || 'Sans nom'}
-                        </p>
-                        <p className="truncate text-xs text-gray-500">
-                          {p.jobTitle || p.specialty || p.role}
-                          {p.facilityName && ` · ${p.facilityName}`}
-                        </p>
-                      </div>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+      {/* Autocomplete dropdown */}
+      {showDropdown && search.trim() && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg"
+        >
+          {search.trim() !== debouncedSearch || isLoading ? (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+              Recherche en cours…
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              Aucun résultat pour « {debouncedSearch} »
+            </div>
+          ) : (
+            <ul className="max-h-60 overflow-y-auto py-1">
+              {suggestions.map((p, i) => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => selectProvider(p)}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-brand-50 ${
+                      i === highlightIndex ? 'bg-brand-50' : ''
+                    }`}
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
+                      {(p.displayName ?? '?').slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-gray-900">
+                        {p.displayName || 'Sans nom'}
+                      </p>
+                      <p className="truncate text-xs text-gray-500">
+                        {p.jobTitle || p.specialty || p.role}
+                        {p.facilityName && ` · ${p.facilityName}`}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Role / Day filters */}

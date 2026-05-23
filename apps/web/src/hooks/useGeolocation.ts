@@ -22,6 +22,32 @@ function snap4(n: number): number {
 }
 
 /*
+ * Throttled position update. Only propagate if either:
+ *  - ≥ 10 s have elapsed since last update, OR
+ *  - position moved > 100 m (≈ 9e-4 degrees)
+ * This stops watchPosition from flooding React with identical-
+ * looking objects every few seconds.
+ */
+let lastPushTime = 0;
+let lastPushedLat: number | null = null;
+let lastPushedLng: number | null = null;
+
+function shouldPush(lat: number, lng: number): boolean {
+  const now = Date.now();
+  if (now - lastPushTime < 10_000) {
+    if (lastPushedLat != null && lastPushedLng != null) {
+      const dLat = Math.abs(lat - lastPushedLat);
+      const dLng = Math.abs(lng - lastPushedLng);
+      if (dLat < 9e-4 && dLng < 9e-4) return false;
+    }
+  }
+  lastPushTime = now;
+  lastPushedLat = lat;
+  lastPushedLng = lng;
+  return true;
+}
+
+/*
  * Small in-memory cache so multiple components share one
  * `watchPosition` handle.
  */
@@ -44,17 +70,17 @@ function startWatching(): number | null {
   }
 
   return navigator.geolocation.watchPosition(
-    (pos) =>
+    (pos) => {
+      const lat = snap4(pos.coords.latitude);
+      const lng = snap4(pos.coords.longitude);
+      if (!shouldPush(lat, lng)) return;
       push({
-        position: {
-          lat: snap4(pos.coords.latitude),
-          lng: snap4(pos.coords.longitude),
-          accuracy: pos.coords.accuracy,
-        },
+        position: { lat, lng, accuracy: pos.coords.accuracy },
         loading: false,
         error: null,
         permission: 'granted',
-      }),
+      });
+    },
     (err) => {
       let msg = "Impossible d'obtenir votre position.";
       if (err.code === err.PERMISSION_DENIED)
@@ -125,6 +151,9 @@ export function useGeolocation(): GeoState & {
 
   const refresh = useCallback(() => {
     setState((p) => ({ ...p, loading: true, error: null }));
+    lastPushTime = 0;
+    lastPushedLat = null;
+    lastPushedLng = null;
     if (sharedId != null) {
       navigator.geolocation.clearWatch(sharedId);
       sharedId = null;

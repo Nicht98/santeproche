@@ -151,56 +151,61 @@ export function SearchPage() {
           </button>
         )}
 
-        {/* Autocomplete dropdown */}
-        {showDropdown && debouncedQ && (
-          <div
-            ref={dropdownRef}
-            className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg"
-          >
-            {suggestions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">
-                Aucun résultat pour « {debouncedQ} »
-              </div>
-            ) : (
-              <ul className="max-h-60 overflow-y-auto py-1">
-                {suggestions.map((item, i) => {
-                  const isProvider = item._type === 'provider';
-                  const icon = isProvider ? (
-                    <Stethoscope className="h-4 w-4 text-brand-600" />
-                  ) : (
-                    <Pill className="h-4 w-4 text-brand-600" />
-                  );
-                  const title = isProvider
-                    ? item.displayName || 'Sans nom'
-                    : item.name;
-                  const subtitle = isProvider
-                    ? `${item.jobTitle || item.specialty || item.role}${item.facilityName ? ` · ${item.facilityName}` : ''}`
-                    : `${item.city ?? item.address ?? ''}`;
+      {/* Autocomplete dropdown */}
+      {showDropdown && q.trim() && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg"
+        >
+          {q.trim() !== debouncedQ || isLoading ? (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+              Recherche en cours…
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              Aucun résultat pour « {debouncedQ} »
+            </div>
+          ) : (
+            <ul className="max-h-60 overflow-y-auto py-1">
+              {suggestions.map((item, i) => {
+                const isProvider = item._type === 'provider';
+                const icon = isProvider ? (
+                  <Stethoscope className="h-4 w-4 text-brand-600" />
+                ) : (
+                  <Pill className="h-4 w-4 text-brand-600" />
+                );
+                const title = isProvider
+                  ? item.displayName || 'Sans nom'
+                  : item.name;
+                const subtitle = isProvider
+                  ? `${item.jobTitle || item.specialty || item.role}${item.facilityName ? ` · ${item.facilityName}` : ''}`
+                  : `${item.city ?? item.address ?? ''}`;
 
-                  return (
-                    <li key={`${item._type}-${item.id}`}>
-                      <button
-                        onClick={() => selectItem(item)}
-                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-brand-50 ${
-                          i === highlightIndex ? 'bg-brand-50' : ''
-                        }`}
-                      >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
-                          {icon}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-gray-900">{title}</p>
-                          <p className="truncate text-xs text-gray-500">{subtitle}</p>
-                        </div>
-                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        )}
+                return (
+                  <li key={`${item._type}-${item.id}`}>
+                    <button
+                      onClick={() => selectItem(item)}
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-brand-50 ${
+                        i === highlightIndex ? 'bg-brand-50' : ''
+                      }`}
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
+                        {icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-gray-900">{title}</p>
+                        <p className="truncate text-xs text-gray-500">{subtitle}</p>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
       </div>
 
       <div className="flex gap-2">
