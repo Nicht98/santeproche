@@ -28,12 +28,18 @@ export function NearbyPage() {
   const geo = useGeolocation();
   const store = useLocationStore();
 
-  // Sync geolocation into store so other pages benefit
+  // Sync geolocation into store so other pages benefit — guard against identical values
   useEffect(() => {
     if (geo.position) {
-      store.setLocation(geo.position.lat, geo.position.lng);
+      const EPS = 1e-6;
+      if (
+        Math.abs((geo.position.lat ?? 0) - (store.lat ?? 0)) > EPS ||
+        Math.abs((geo.position.lng ?? 0) - (store.lng ?? 0)) > EPS
+      ) {
+        store.setLocation(geo.position.lat, geo.position.lng);
+      }
     }
-  }, [geo.position, store]);
+  }, [geo.position, store.lat, store.lng]);
 
   const lat = geo.position?.lat ?? store.lat ?? null;
   const lng = geo.position?.lng ?? store.lng ?? null;
