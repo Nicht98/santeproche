@@ -179,6 +179,16 @@ export function NearbyPage() {
                       {Math.round(f.distanceKm * 10) / 10} km
                     </span>
                   )}
+                  {f.travelTimeWalkMinutes != null && f.travelTimeWalkMinutes <= 60 && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700" title="À pied">
+                      🚶 {f.travelTimeWalkMinutes} min
+                    </span>
+                  )}
+                  {f.travelTimeDriveMinutes != null && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700" title="En voiture">
+                      🚗 {f.travelTimeDriveMinutes} min
+                    </span>
+                  )}
                   {f.is24h && (
                     <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
                       24h/24

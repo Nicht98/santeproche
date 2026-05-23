@@ -97,11 +97,23 @@ export function Facilities() {
                   <p className="text-xs text-gray-500">{f.city ?? f.address ?? 'Adresse inconnue'}</p>
                 </div>
                 {f.phone && <p className="text-[10px] text-gray-400">📞 {f.phone}</p>}
-                {f.distanceKm != null && (
-                  <span className="mt-0.5 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
-                    {Math.round(f.distanceKm * 10) / 10} km
-                  </span>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {f.distanceKm != null && (
+                    <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                      {Math.round(f.distanceKm * 10) / 10} km
+                    </span>
+                  )}
+                  {f.travelTimeWalkMinutes != null && f.travelTimeWalkMinutes <= 60 && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700" title="À pied">
+                      🚶 {f.travelTimeWalkMinutes} min
+                    </span>
+                  )}
+                  {f.travelTimeDriveMinutes != null && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700" title="En voiture">
+                      🚗 {f.travelTimeDriveMinutes} min
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => navigate(`/facility/${f.id}`)}

@@ -187,6 +187,8 @@ export interface Facility {
   lng: number | null;
   phone: string | null;
   distanceKm?: number;
+  travelTimeDriveMinutes?: number | null;
+  travelTimeWalkMinutes?: number | null;
   is24h?: boolean;
   hasEmergency?: boolean;
 }
