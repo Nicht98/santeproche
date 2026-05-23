@@ -3,7 +3,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Build-time env for API base URL
-ARG VITE_API_URL=http://185.215.165.2:3001/api/v1
+ARG VITE_API_URL=/api/v1
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Copy workspace config

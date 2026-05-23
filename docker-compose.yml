@@ -1,12 +1,38 @@
 services:
+  # ===========================================
+  #   REVERSE PROXY — routes /api → API:3001, / → web SPA
+  # ===========================================
+  nginx:
+    build:
+      context: .
+      dockerfile: ./infra/nginx/Dockerfile
+    ports:
+      - "8090:80"
+    environment:
+      - API_HOST=185.215.165.2
+      - API_PORT=3001
+    depends_on:
+      web:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ===========================================
+  #   FRONTEND SPA (served internally only)
+  # ===========================================
   web:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
       args:
-        - VITE_API_URL=http://185.215.165.2:3001/api/v1
-    ports:
-      - "8090:80"
+        - VITE_API_URL=/api/v1
+    expose:
+      - "80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
