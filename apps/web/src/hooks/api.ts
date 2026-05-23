@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { auth, patients, providers, facilities, appointments, chat } from '../lib/api';
 import type { UpdateStatusBody } from '../lib/api';
 
@@ -31,6 +31,7 @@ export function useProviders(params?: Parameters<typeof providers.list>[0]) {
   return useQuery({
     queryKey: ['providers', params],
     queryFn: () => providers.list(params),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -39,6 +40,7 @@ export function useProvider(id: string) {
     queryKey: ['provider', id],
     queryFn: () => providers.get(id),
     enabled: !!id,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -47,6 +49,7 @@ export function useFacilities(params?: Parameters<typeof facilities.list>[0]) {
   return useQuery({
     queryKey: ['facilities', params],
     queryFn: () => facilities.list(params),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -55,6 +58,7 @@ export function useFacility(id: string) {
     queryKey: ['facility', id],
     queryFn: () => facilities.get(id),
     enabled: !!id,
+    placeholderData: keepPreviousData,
   });
 }
 
