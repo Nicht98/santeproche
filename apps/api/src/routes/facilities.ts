@@ -4,6 +4,61 @@ import { eq, and, sql, ilike, inArray, gte, lte } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { facilities, users, providerProfiles, cities, appointments, providerSchedules } from '../db/schema/index.js';
 
+const OSRM_URL = process.env.OSRM_URL || 'http://osrm-routed:5000';
+
+declare const fetch: typeof globalThis.fetch;
+
+interface TravelTimes {
+  travelTimeDriveMinutes: number;
+  travelTimeWalkMinutes: number;
+}
+
+async function queryTravelTimes(
+  userLat: number,
+  userLng: number,
+  targets: Array<{ id: string; lat: string | number | null; lng: string | number | null }>
+): Promise<Record<string, TravelTimes>> {
+  const result: Record<string, TravelTimes> = {};
+  const withCoords = targets.filter((t) => t.lat != null && t.lng != null);
+  if (withCoords.length === 0) return result;
+
+  const coords = `${userLng},${userLat};` + withCoords.map((t) => `${t.lng},${t.lat}`).join(';');
+  const url = `${OSRM_URL}/table/v1/driving/${coords}?annotations=duration%2Cdistance&sources=0`;
+
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return result;
+
+    const data = (await res.json()) as {
+      code: string;
+      durations?: number[][];
+      distances?: number[][];
+    };
+
+    if (data.code !== 'Ok' || !data.durations?.[0] || !data.distances?.[0]) return result;
+
+    const durations = data.durations[0];
+    const distances = data.distances[0];
+
+    for (let i = 0; i < withCoords.length; i++) {
+      const t = withCoords[i];
+      const durationSeconds = durations[i + 1];
+      const distanceMeters = distances[i + 1];
+      if (durationSeconds == null || distanceMeters == null) continue;
+
+      result[t.id] = {
+        travelTimeDriveMinutes: Math.round(durationSeconds / 60),
+        // Walk at ~1.4 m/s (5 km/h) using the actual road distance
+        travelTimeWalkMinutes: Math.round(distanceMeters / 1.4 / 60),
+      };
+    }
+  } catch (_err) {
+    // Silent fallback — no travel times if OSRM is unreachable
+  }
+
+  return result;
+}
+
 const FacilityQuerySchema = z.object({
   cityId: z.string().optional(),
   kind: z.string().optional(),
@@ -108,6 +163,14 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
         .offset(offset);
 
       data = rows.map((r) => ({ ...r, distanceKm: r.distanceKm ? parseFloat(r.distanceKm as string) : null }));
+
+      // Add real driving / walking times for each facility
+      const travelMap = await queryTravelTimes(lat, lng, data.map((f) => ({ id: f.id, lat: f.lat, lng: f.lng })));
+      data = data.map((f) => ({
+        ...f,
+        travelTimeDriveMinutes: travelMap[f.id]?.travelTimeDriveMinutes ?? null,
+        travelTimeWalkMinutes: travelMap[f.id]?.travelTimeWalkMinutes ?? null,
+      }));
     } else {
       const rows = await db
         .select({
