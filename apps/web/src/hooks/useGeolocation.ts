@@ -14,6 +14,14 @@ export interface GeoState {
 }
 
 /*
+ * Decimate raw GPS to 4 decimals (~11 m) so micro-jitter from
+ * watchPosition doesn't flood subscribers / zustand store.
+ */
+function snap4(n: number): number {
+  return Math.round(n * 1e4) / 1e4;
+}
+
+/*
  * Small in-memory cache so multiple components share one
  * `watchPosition` handle.
  */
@@ -39,8 +47,8 @@ function startWatching(): number | null {
     (pos) =>
       push({
         position: {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
+          lat: snap4(pos.coords.latitude),
+          lng: snap4(pos.coords.longitude),
           accuracy: pos.coords.accuracy,
         },
         loading: false,

@@ -18,7 +18,15 @@ export const useLocationStore = create<LocationStore>()(
       city: null,
       setLocation: (lat, lng) =>
         set((state) => {
-          if (state.lat === lat && state.lng === lng) return state; // idempotent — prevent useless re-renders
+          const EPS = 1e-4;
+          if (
+            state.lat !== null &&
+            state.lng !== null &&
+            Math.abs(state.lat - lat) < EPS &&
+            Math.abs(state.lng - lng) < EPS
+          ) {
+            return state; // ignore micro-jitter
+          }
           return { lat, lng };
         }),
       setCity: (city) => set({ city }),
