@@ -1,33 +1,36 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, Stethoscope, Pill, Building2, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, AlertTriangle, Check, XCircle, Package } from 'lucide-react';
-import { useFacility, useFacilityStock } from '../hooks/api';
+import { ArrowLeft, MapPin, Phone, Stethoscope, Pill, Building2, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, AlertTriangle, Check, XCircle, Package, Star } from 'lucide-react';
+import { useFacility, useFacilityStock, useFacilityReviews, useDeleteReview } from '../hooks/api';
+import { useAuthStore } from '../stores/auth';
+import { ReviewCard } from '../components/reviews/ReviewCard';
+import { ReviewForm } from '../components/reviews/ReviewForm';
+import { ScoreBreakdown, ReviewBadge } from '../components/reviews/ScoreBreakdown';
 import { Card, LoadingScreen, ErrorBanner, EmptyState } from '../components/ui';
 
 export function FacilityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const user = useAuthStore();
   const { data, isLoading, error, refetch } = useFacility(id!);
   const [searchQ, setSearchQ] = useState('');
   const { data: stockData, isLoading: stockLoading } = useFacilityStock(id!, searchQ);
+  const { data: reviewsData } = useFacilityReviews(id!, { limit: 10 });
+  const deleteReview = useDeleteReview();
+  const [showForm, setShowForm] = useState(false);
 
   if (isLoading) return <LoadingScreen />;
   if (error || !data || !data.data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
 
   const f = data.data;
+  const reviews = reviewsData?.data ?? [];
+  const revSummary = f.reviewSummary;
+
   const iconMap: Record<string, typeof Pill> = {
-    pharmacy: Pill,
-    hospital: Stethoscope,
-    clinic: Building2,
-    laboratory: FlaskConical,
-    health_center: HeartPulse,
-    dispensary: MapPin,
-    maternity: Baby,
-    dental: Smile,
-    optical: Glasses,
-    mental_health: Brain,
-    vaccination: Syringe,
-    other: MapPin,
+    pharmacy: Pill, hospital: Stethoscope, clinic: Building2,
+    laboratory: FlaskConical, health_center: HeartPulse, dispensary: MapPin,
+    maternity: Baby, dental: Smile, optical: Glasses, mental_health: Brain,
+    vaccination: Syringe, other: MapPin,
   };
   const Icon = iconMap[f?.kind ?? ''] || MapPin;
 
@@ -42,7 +45,7 @@ export function FacilityDetail() {
       case 'maternity': return 'Maternité';
       case 'dental': return 'Cabinet dentaire';
       case 'optical': return 'Optique';
-      case 'mental_health': return 'Santé mentale / Psychology';
+      case 'mental_health': return 'Santé mentale';
       case 'vaccination': return 'Centre de vaccination';
       case 'other': return 'Établissement de santé';
       default: return f?.kind ?? '';
@@ -52,18 +55,29 @@ export function FacilityDetail() {
   const stockList = stockData?.data ?? [];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-6">
+      {/* Header */}
       <div className="bg-brand-600 px-4 py-4">
         <button onClick={() => navigate(-1)} className="mb-2 text-white"><ArrowLeft className="h-5 w-5" /></button>
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-white/20 p-2"><Icon className="h-6 w-6 text-white" /></div>
-          <div>
-            <h1 className="text-lg font-bold text-white">{f.name}</h1>
-            <p className="text-sm text-brand-100 capitalize">{kindLabel}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-white truncate">{f.name}</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-sm text-brand-100 capitalize">{kindLabel}</p>
+              {revSummary && revSummary.total > 0 && (
+                <div className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5">
+                  <Star className="h-3 w-3 fill-amber-300 text-amber-300" />
+                  <span className="text-xs font-bold text-white">{revSummary.average?.toFixed(1)}</span>
+                  <span className="text-[10px] text-brand-100">({revSummary.total})</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Info cards */}
       <div className="px-4 space-y-3">
         <Card className="flex items-start gap-3">
           <MapPin className="mt-0.5 h-5 w-5 text-gray-400" />
@@ -79,6 +93,62 @@ export function FacilityDetail() {
             <a href={`tel:${f.phone}`} className="text-sm font-medium text-brand-600">{f.phone}</a>
           </Card>
         )}
+      </div>
+
+      {/* Reviews Section */}
+      <div className="px-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-gray-900">Évaluations</h2>
+          {revSummary && revSummary.total > 0 && (
+            <ReviewBadge count={revSummary.total} average={revSummary.average} />
+          )}
+        </div>
+
+        {revSummary && revSummary.total > 0 && (
+          <div className="mt-2">
+            <ScoreBreakdown summary={revSummary} />
+          </div>
+        )}
+
+        {showForm && (
+          <div className="mt-3">
+            <ReviewForm
+              facilityId={id}
+              onSuccess={() => { setShowForm(false); refetch(); }}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
+        )}
+
+        {!showForm && user.isAuthenticated && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="mt-3 w-full rounded-lg border border-brand-200 bg-brand-50 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+          >
+            + Écrire une évaluation
+          </button>
+        )}
+
+        <div className="mt-3 space-y-2">
+          {reviews.map((r) => (
+            <ReviewCard
+              key={r.id}
+              review={r}
+              canDelete={user.user?.id === r.reviewerId}
+              onDelete={async () => {
+                await deleteReview.mutateAsync(r.id);
+                refetch();
+              }}
+            />
+          ))}
+          {reviews.length === 0 && (
+            <EmptyState
+              icon={Star}
+              title="Aucune évaluation"
+              subtitle="Soyez le premier à laisser un avis."
+            />
+          )}
+        </div>
       </div>
 
       {/* Stock Section */}

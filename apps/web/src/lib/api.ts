@@ -191,6 +191,30 @@ export interface Facility {
   travelTimeWalkMinutes?: number | null;
   is24h?: boolean;
   hasEmergency?: boolean;
+  reviewCount?: number;
+  averageRating?: number | null;
+}
+export interface FacilityReviewSummary {
+  total: number;
+  average: number | null;
+  attributes: {
+    cleanliness: number | null;
+    staffFriendliness: number | null;
+    waitTime: number | null;
+    valueForMoney: number | null;
+    equipmentQuality: number | null;
+  };
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+export interface FacilityDetail extends Facility {
+  status: string;
+  email: string | null;
+  licenseNumber: string | null;
+  licenseVerified: boolean;
+  openingHours: Record<string, unknown> | null;
+  cityRegion: string | null;
+  providers: { id: string; displayName: string | null; role: string; jobTitle: string | null; isPrimaryContact: boolean; kycStatus: string }[];
+  reviewSummary: FacilityReviewSummary;
 }
 export interface FacilitiesQuery {
   lat?: number;
@@ -202,11 +226,69 @@ export interface FacilitiesQuery {
 }
 export const facilities = {
   list: (params?: FacilitiesQuery) =>
-    api<{ data: Facility[]; total: number }>(`/facilities?${qs(params)}`),
+    api<{ data: Facility[]; pagination: { limit: number; offset: number; count: number } }>(`/facilities?${qs(params)}`),
   get: (id: string) =>
-    api<{ data: Facility }>(`/facilities/${id}`),
+    api<{ data: FacilityDetail }>(`/facilities/${id}`),
   stock: (id: string, q?: string) =>
     api<{ data: any[]; pagination: { limit: number; offset: number; count: number } }>(`/facilities/${id}/stock?${q ? 'q=' + encodeURIComponent(q) : ''}`),
+};
+
+/* ---------- Reviews ---------- */
+export interface Review {
+  id: string;
+  reviewerId: string;
+  reviewerName: string | null;
+  reviewerAvatar: string | null;
+  facilityId: string | null;
+  providerId: string | null;
+  rating: number;
+  comment: string | null;
+  cleanliness: number | null;
+  staffFriendliness: number | null;
+  waitTime: number | null;
+  valueForMoney: number | null;
+  equipmentQuality: number | null;
+  isVerifiedVisit: boolean;
+  createdAt: string;
+}
+export interface ReviewSummary {
+  total: number;
+  average: number | null;
+  attributes: {
+    cleanliness: number | null;
+    staffFriendliness: number | null;
+    waitTime: number | null;
+    valueForMoney: number | null;
+    equipmentQuality: number | null;
+  };
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+export interface ReviewsResponse {
+  data: Review[];
+  summary: ReviewSummary;
+  pagination: { limit: number; offset: number; count: number };
+}
+export interface CreateReviewBody {
+  facilityId?: string;
+  providerId?: string;
+  appointmentId?: string;
+  rating: number;
+  comment?: string;
+  cleanliness?: number;
+  staffFriendliness?: number;
+  waitTime?: number;
+  valueForMoney?: number;
+  equipmentQuality?: number;
+}
+export const reviews = {
+  facility: (id: string, params?: { limit?: number; offset?: number }) =>
+    api<ReviewsResponse>(`/reviews/facility/${id}?${qs(params)}`),
+  provider: (id: string, params?: { limit?: number; offset?: number }) =>
+    api<ReviewsResponse>(`/reviews/provider/${id}?${qs(params)}`),
+  create: (body: CreateReviewBody) =>
+    api<{ status: string; review: Review }>('/reviews', { method: 'POST', body: JSON.stringify(body) }),
+  remove: (id: string) =>
+    api<{ status: string; message: string }>(`/reviews/${id}`, { method: 'DELETE' }),
 };
 
 /* ---------- Appointments ---------- */

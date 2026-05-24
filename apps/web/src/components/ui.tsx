@@ -53,6 +53,29 @@ export function EmptyState({ icon: Icon, title, subtitle, action }: { icon: type
 
 export function ErrorBanner({ message, error, onRetry }: { message?: string; error?: unknown; onRetry?: () => void }) {
   const display = message ?? formatError(error ?? null);
+
+  /* Detect session/auth errors so the retry button redirects to login */
+  const isAuthError = (() => {
+    if (!error || !(error instanceof Error)) return false;
+    const e = error as { code?: string; status?: number };
+    return e.code === 'UNAUTHORIZED' || e.status === 401;
+  })();
+
+  const handleClick = () => {
+    if (isAuthError) {
+      // Clear auth state and tokens then redirect to login
+      try {
+        localStorage.removeItem('auth');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('auth_guest');
+      } catch { /* noop */ }
+      window.location.href = '/login';
+      return;
+    }
+    onRetry?.();
+  };
+
   return (
     <div className="animate-fade-in rounded-2xl bg-red-50 p-4 text-sm text-red-700 border border-red-100">
       <div className="flex items-start gap-2">
@@ -64,12 +87,18 @@ export function ErrorBanner({ message, error, onRetry }: { message?: string; err
           {onRetry && (
             <button
               className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-red-700 underline underline-offset-2 transition-colors hover:text-red-800"
-              onClick={onRetry}
+              onClick={handleClick}
             >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7" />
-              </svg>
-              Réessayer
+              {isAuthError ? (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                </svg>
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7" />
+                </svg>
+              )}
+              {isAuthError ? 'Se reconnecter' : 'Réessayer'}
             </button>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { auth, patients, providers, facilities, appointments, chat } from '../lib/api';
+import { auth, patients, providers, facilities, appointments, chat, reviews } from '../lib/api';
 import type { UpdateStatusBody } from '../lib/api';
 
 /* ---------- Auth ---------- */
@@ -165,6 +165,49 @@ export function useStartConversation() {
     mutationFn: chat.start,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+/* ---------- Reviews ---------- */
+export function useFacilityReviews(facilityId: string, params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ['reviews', 'facility', facilityId, params],
+    queryFn: () => reviews.facility(facilityId, params),
+    enabled: !!facilityId,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useProviderReviews(providerId: string, params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ['reviews', 'provider', providerId, params],
+    queryFn: () => reviews.provider(providerId, params),
+    enabled: !!providerId,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useCreateReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reviews.create,
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['reviews', 'facility', variables.facilityId] });
+      qc.invalidateQueries({ queryKey: ['reviews', 'provider', variables.providerId] });
+      qc.invalidateQueries({ queryKey: ['facility', variables.facilityId] });
+      qc.invalidateQueries({ queryKey: ['facilities'] });
+    },
+  });
+}
+
+export function useDeleteReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reviews.remove,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews'] });
+      qc.invalidateQueries({ queryKey: ['facilities'] });
     },
   });
 }

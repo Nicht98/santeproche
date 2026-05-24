@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Pill, Stethoscope, Building2, FlaskConical, HeartPulse,
-  Baby, Smile, Glasses, Brain, Syringe, MapPin as MapPinIcon,
+  Baby, Smile, Glasses, Brain, Syringe, MapPin as MapPinIcon, Star,
   Loader2, Phone, ArrowRight, Crosshair, Navigation, AlertCircle,
 } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
@@ -186,7 +186,13 @@ export function NearbyPage() {
                     <a href={`tel:${f.phone}`} className="text-brand-600 hover:underline">{f.phone}</a>
                   </div>
                 )}
-                <div className="mt-1.5 flex items-center gap-2">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  {f.reviewCount && f.reviewCount > 0 && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {f.averageRating?.toFixed(1)} ({f.reviewCount})
+                    </span>
+                  )}
                   {f.distanceKm != null && (
                     <span className="inline-flex items-center gap-0.5 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
                       <Crosshair className="h-3 w-3" />

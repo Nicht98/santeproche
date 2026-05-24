@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Pill, Stethoscope, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, ArrowRight, Crosshair, Loader2 } from 'lucide-react';
+import { MapPin, Pill, Stethoscope, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, ArrowRight, Crosshair, Loader2, Star } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
 import { useLocationStore } from '../stores/location';
 import { Card, EmptyState } from '../components/ui';
@@ -136,6 +136,12 @@ export function Facilities() {
                 </div>
                 {f.phone && <p className="text-[10px] text-gray-400">📞 {f.phone}</p>}
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {f.reviewCount && f.reviewCount > 0 && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {f.averageRating?.toFixed(1)} ({f.reviewCount})
+                    </span>
+                  )}
                   {f.distanceKm != null && (
                     <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
                       {Math.round(f.distanceKm * 10) / 10} km
