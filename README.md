@@ -1,6 +1,6 @@
 # SanteProche 🇨🇲
 
-Healthcare access platform for Cameroon. Connects patients, parents, elderly, healthcare workers, and tourists with nearby open pharmacies, hospitals, and clinics — with real-time drug stock lookup, appointment booking, chat with providers, transport cost estimates, and emergency SOS.
+Healthcare access platform for Cameroon. Connects patients, parents, elderly, healthcare workers, and tourists with nearby open pharmacies, hospitals, clinics, centres de santé, dispensaires, maternités, cabinets dentaires, optiques, mental health, and vaccination centres — with real-time drug stock lookup, appointment booking, chat with providers, transport cost estimates, and emergency SOS.
 
 **Deployed on Dokploy** — `docker compose up -d --build` on every push to `main`.
 
@@ -117,7 +117,7 @@ curl -X POST "$API/auth/otp/verify" \
 
 ---
 
-### Facilities (Pharmacies, Hospitals, Clinics)
+### Facilities (Pharmacies, Hospitals, Clinics, Labs, Centres de santé, Dispensaires, Maternités, Dentaires, Optiques, Mental Health, Vaccination, Other)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
@@ -127,7 +127,7 @@ curl -X POST "$API/auth/otp/verify" \
 
 #### Query Parameters for `/facilities`
 - `search` — text search on name and address
-- `kind` — filter by type: `pharmacy`, `hospital`, `clinic`, `laboratory`, `health_center` (comma-separated for multiple)
+- `kind` — filter by type: `pharmacy`, `hospital`, `clinic`, `laboratory`, `health_center`, `dispensary`, `maternity`, `dental`, `optical`, `mental_health`, `vaccination`, `other` (comma-separated for multiple)
 - `cityId` — filter by city
 - `lat` + `lng` + `radiusKm` — geo search with distance sorting
 - `openNow=true` — only facilities currently open
@@ -426,6 +426,12 @@ All migrations run automatically on container startup via `startup.sh`.
 | `0007_reviews_records_prescriptions_notifications_sos.sql` | Full medical + emergency schema |
 | `0008_drugs_drug_stock.sql` | Drug catalog + stock tracking |
 | `0009_seed_drug_stock.sql` | Seeded stock at pharmacies/hospitals |
+| `0010_add_reschedule_fields.sql` | Reschedule fields on appointments |
+| `0010_provider_resume_experience.sql` | Provider resume + current workplace |
+| `0011_sync_rejected_providers.sql` | Sync rejected providers flag |
+| `0012_expand_facility_kinds.sql` | Expand facility_kind enum: dispensary, maternity, dental, optical, mental_health, vaccination |
+
+> **Note**: `main` and `frontend` are separate deploy branches. Backend changes (API, DB, migrations, shared-types) go to `main`. Frontend / UI changes go to `frontend`. Both deploy independently.
 
 ---
 
