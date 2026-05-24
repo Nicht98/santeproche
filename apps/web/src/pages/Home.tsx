@@ -88,7 +88,7 @@ export function Home() {
           {[
             { icon: Stethoscope, label: 'Médecins', route: '/providers' },
             { icon: Navigation, label: "À proximité", route: '/nearby' },
-            { icon: MapPin, label: 'Pharmacies', route: '/facilities' },
+            { icon: MapPin, label: 'Établissements', route: '/facilities' },
             { icon: CalendarCheck, label: 'RDV', route: isAuthenticated ? '/appointments' : '/login' },
           ].map((item) => (
             <button key={item.label} onClick={() => navigate(item.route)} className="group flex flex-col items-center gap-2 rounded-2xl bg-white p-3 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover active:scale-95">
@@ -102,7 +102,7 @@ export function Home() {
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">{lat && lng ? 'Pharmacies à proximité' : 'Pharmacies'}</h2>
+            <h2 className="text-base font-bold text-slate-900">{lat && lng ? 'Établissements de santé à proximité' : 'Établissements de santé'}</h2>
             <button onClick={() => navigate('/facilities')} className="flex items-center gap-0.5 text-xs font-semibold text-brand-600 transition-colors hover:text-brand-700">
               Voir tout <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -122,7 +122,7 @@ export function Home() {
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500" />
               </Card>
             ))}
-            {(!nearbyFacilities?.data?.length && !facLoading) && <p className="py-8 text-center text-xs text-slate-400">Aucune pharmacie trouvée</p>}
+            {(!nearbyFacilities?.data?.length && !facLoading) && <p className="py-8 text-center text-xs text-slate-400">Aucun établissement trouvé</p>}
           </div>
         </section>
 
