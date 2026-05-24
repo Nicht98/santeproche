@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Phone, Stethoscope, Pill, Search, AlertTriangle, Check, XCircle, Package } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, Stethoscope, Pill, Building2, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, AlertTriangle, Check, XCircle, Package } from 'lucide-react';
 import { useFacility, useFacilityStock } from '../hooks/api';
 import { Card, LoadingScreen, ErrorBanner, EmptyState } from '../components/ui';
 
@@ -15,8 +15,40 @@ export function FacilityDetail() {
   if (error || !data || !data.data) return <div className="p-4"><ErrorBanner error={error} onRetry={refetch} /></div>;
 
   const f = data.data;
-  const iconMap: Record<string, typeof Pill> = { pharmacy: Pill, hospital: Stethoscope, clinic: Stethoscope };
-  const Icon = iconMap[f?.kind ?? ""] || MapPin;
+  const iconMap: Record<string, typeof Pill> = {
+    pharmacy: Pill,
+    hospital: Stethoscope,
+    clinic: Building2,
+    laboratory: FlaskConical,
+    health_center: HeartPulse,
+    dispensary: MapPin,
+    maternity: Baby,
+    dental: Smile,
+    optical: Glasses,
+    mental_health: Brain,
+    vaccination: Syringe,
+    other: MapPin,
+  };
+  const Icon = iconMap[f?.kind ?? ''] || MapPin;
+
+  const kindLabel = (() => {
+    switch (f?.kind) {
+      case 'pharmacy': return 'Pharmacie';
+      case 'hospital': return "Hôpital";
+      case 'clinic': return 'Clinique';
+      case 'laboratory': return 'Laboratoire';
+      case 'health_center': return 'Centre de santé';
+      case 'dispensary': return 'Dispensaire';
+      case 'maternity': return 'Maternité';
+      case 'dental': return 'Cabinet dentaire';
+      case 'optical': return 'Optique';
+      case 'mental_health': return 'Santé mentale / Psychology';
+      case 'vaccination': return 'Centre de vaccination';
+      case 'other': return 'Établissement de santé';
+      default: return f?.kind ?? '';
+    }
+  })();
+
   const stockList = stockData?.data ?? [];
 
   return (
@@ -27,7 +59,7 @@ export function FacilityDetail() {
           <div className="rounded-lg bg-white/20 p-2"><Icon className="h-6 w-6 text-white" /></div>
           <div>
             <h1 className="text-lg font-bold text-white">{f.name}</h1>
-            <p className="text-sm text-brand-100 capitalize">{f?.kind === 'pharmacy' ? 'Pharmacie' : f?.kind === 'hospital' ? 'Hôpital' : f?.kind === 'clinic' ? 'Clinique' : f?.kind}</p>
+            <p className="text-sm text-brand-100 capitalize">{kindLabel}</p>
           </div>
         </div>
       </div>

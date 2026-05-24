@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Pill, Stethoscope, Search, ArrowRight, Crosshair, Loader2 } from 'lucide-react';
+import { MapPin, Pill, Stethoscope, FlaskConical, HeartPulse, Baby, Smile, Glasses, Brain, Syringe, Search, ArrowRight, Crosshair, Loader2 } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
 import { useLocationStore } from '../stores/location';
 import { Card, EmptyState } from '../components/ui';
@@ -13,6 +13,21 @@ export function Facilities() {
   const [kind, setKind] = useState('');
   const [nearbyOnly, setNearbyOnly] = useState(false);
   const { lat, lng } = useLocationStore();
+
+  const kindTabs = [
+    { key: '',         label: 'Tous' },
+    { key: 'pharmacy', label: 'Pharmacies' },
+    { key: 'hospital', label: 'Hôpitaux' },
+    { key: 'clinic',   label: 'Cliniques' },
+    { key: 'laboratory',      label: 'Labos' },
+    { key: 'health_center',   label: 'Centres de santé' },
+    { key: 'dispensary',      label: 'Dispensaires' },
+    { key: 'maternity',       label: 'Maternités' },
+    { key: 'dental',          label: 'Dentaires' },
+    { key: 'optical',         label: 'Optiques' },
+    { key: 'mental_health',   label: 'Mental / Psy' },
+    { key: 'vaccination',     label: 'Vaccinations' },
+  ];
 
   const useGeo = nearbyOnly && lat && lng;
 
@@ -36,6 +51,15 @@ export function Facilities() {
     pharmacy: Pill,
     hospital: Stethoscope,
     clinic: Stethoscope,
+    laboratory: FlaskConical,
+    health_center: HeartPulse,
+    dispensary: MapPin,
+    maternity: Baby,
+    dental: Smile,
+    optical: Glasses,
+    mental_health: Brain,
+    vaccination: Syringe,
+    other: MapPin,
   };
 
   return (
@@ -72,17 +96,17 @@ export function Facilities() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto">
-        {['Tous', 'pharmacy', 'hospital', 'clinic'].map((t) => (
+        {kindTabs.map((t) => (
           <button
-            key={t}
-            onClick={() => setKind(t === 'Tous' ? '' : t)}
+            key={t.key}
+            onClick={() => setKind(t.key)}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
-              (kind === t || (t === 'Tous' && !kind))
+              (kind === t.key || (t.key === '' && !kind))
                 ? 'bg-brand-600 text-white'
                 : 'bg-gray-100 text-gray-600'
             }`}
           >
-            {t === 'pharmacy' ? 'Pharmacies' : t === 'hospital' ? 'Hôpitaux' : t === 'clinic' ? 'Cliniques' : 'Tous'}
+            {t.label}
           </button>
         ))}
       </div>

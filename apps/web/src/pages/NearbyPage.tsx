@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Pill, Stethoscope, Building2, FlaskConical, HeartPulse,
+  Baby, Smile, Glasses, Brain, Syringe, MapPin as MapPinIcon,
   Loader2, Phone, ArrowRight, Crosshair, Navigation, AlertCircle,
 } from 'lucide-react';
 import { useFacilities } from '../hooks/api';
@@ -10,15 +11,22 @@ import { useLocationStore } from '../stores/location';
 import { Card, EmptyState } from '../components/ui';
 import { formatError } from '../lib/errors';
 
-type Kind = 'all' | 'pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center';
+type Kind = 'all' | 'pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center' | 'dispensary' | 'maternity' | 'dental' | 'optical' | 'mental_health' | 'vaccination' | 'other';
 
 const kindConfig: Record<Kind, { label: string; icon: typeof Pill; color: string }> = {
-  all:           { label: 'Tout',          icon: HeartPulse,  color: 'text-brand-600' },
-  pharmacy:      { label: 'Pharmacies',    icon: Pill,        color: 'text-emerald-600' },
-  hospital:      { label: 'Hôpitaux',      icon: Stethoscope, color: 'text-rose-600' },
-  clinic:        { label: 'Cliniques',     icon: Building2,   color: 'text-blue-600' },
-  laboratory:    { label: 'Laboratoires',  icon: FlaskConical,color: 'text-violet-600' },
-  health_center: { label: 'Centres',       icon: HeartPulse,  color: 'text-amber-600' },
+  all:           { label: 'Tout',              icon: HeartPulse,    color: 'text-brand-600' },
+  pharmacy:      { label: 'Pharmacies',        icon: Pill,          color: 'text-emerald-600' },
+  hospital:      { label: 'Hôpitaux',          icon: Stethoscope,   color: 'text-rose-600' },
+  clinic:        { label: 'Cliniques',         icon: Building2,     color: 'text-blue-600' },
+  laboratory:    { label: 'Laboratoires',      icon: FlaskConical,  color: 'text-violet-600' },
+  health_center: { label: 'Centres de santé',  icon: HeartPulse,    color: 'text-amber-600' },
+  dispensary:    { label: 'Dispensaires',      icon: MapPinIcon,    color: 'text-orange-600' },
+  maternity:     { label: 'Maternités',        icon: Baby,          color: 'text-pink-600' },
+  dental:        { label: 'Dentaires',         icon: Smile,         color: 'text-cyan-600' },
+  optical:       { label: 'Optiques',          icon: Glasses,       color: 'text-indigo-600' },
+  mental_health: { label: 'Mental / Psy',      icon: Brain,         color: 'text-teal-600' },
+  vaccination:   { label: 'Vaccinations',      icon: Syringe,       color: 'text-lime-600' },
+  other:         { label: 'Autres',            icon: MapPinIcon,    color: 'text-gray-500' },
 };
 
 export function NearbyPage() {
@@ -52,7 +60,7 @@ export function NearbyPage() {
       lng,
       radiusKm,
       limit: 20,
-      ...(kind !== 'all' ? { type: kind } : {}),
+      ...(kind !== 'all' ? { kind } : {}),
     };
   }, [hasCoords, lat, lng, radiusKm, kind]);
 
