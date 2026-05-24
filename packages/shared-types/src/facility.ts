@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const FacilityKind = z.enum(['pharmacys', 'hospitals', 'clinic', 'health_center']);
+export const FacilityKind = z.enum([
+  'pharmacy', 'hospital', 'clinic', 'laboratory', 'health_center',
+  'dispensary', 'maternity', 'dental', 'optical', 'mental_health', 'vaccination',
+  'other'
+]);
 export type FacilityKind = z.infer<typeof FacilityKind>;
 
 export const CreateFacilitySchema = z.object({
