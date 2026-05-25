@@ -26,6 +26,7 @@ Deployed on Dokploy from the `frontend` branch.
 apps/web/
 ├── src/
 │   ├── components/         # Reusable UI components
+│   ├── components/reviews/ # StarRating, ReviewCard, ReviewForm, ScoreBreakdown
 │   ├── components/ui/      # Card, Button, Input, EmptyState, SkeletonGrid
 │   ├── hooks/
 │   │   ├── api.ts          # TanStack Query wrappers
@@ -36,12 +37,15 @@ apps/web/
 │   ├── pages/
 │   │   ├── Home.tsx
 │   │   ├── NearbyPage.tsx      # Geo-based facility filters
+│   │   ├── SearchPage.tsx
+│   │   ├── SearchResults.tsx
 │   │   ├── Facilities.tsx      # Search + kind filter tabs
 │   │   ├── FacilityDetail.tsx
 │   │   ├── Providers.tsx
 │   │   ├── ProviderDetail.tsx
 │   │   ├── Booking.tsx
 │   │   ├── Appointments.tsx
+│   │   ├── AppointmentDetail.tsx
 │   │   ├── Chat.tsx
 │   │   ├── Transport.tsx
 │   │   ├── SOS.tsx
@@ -49,6 +53,8 @@ apps/web/
 │   │   ├── PatientRegister.tsx
 │   │   ├── ProviderRegister.tsx
 │   │   ├── ProviderDashboard.tsx
+│   │   ├── AdminPanel.tsx
+│   │   ├── PendingVerification.tsx
 │   │   └── Profile.tsx
 │   ├── stores/
 │   │   ├── auth.ts
@@ -94,7 +100,7 @@ These kinds are rendered as scrollable filter chips on:
 
 ```bash
 # From repo root
-cp apps/web
+cd apps/web
 pnpm install
 pnpm dev
 ```
@@ -106,7 +112,7 @@ The dev server runs at `http://localhost:5173`.
 ## Build
 
 ```bash
-cp apps/web
+cd apps/web
 pnpm run build
 ```
 
@@ -142,6 +148,22 @@ All backend calls go through `lib/api.ts` using a lightweight `fetch` wrapper. K
 | `GET /conversations` | Chat |
 | `POST /sos` | SOS |
 | `POST /transport/nearby` | Transport |
+
+---
+
+## Review System
+
+Auth-guarded star ratings for **facilities** and **providers**, with optional per-criterion scoring:
+
+- **StarRating**   — read-only & interactive variants (1–5 stars)
+- **ScoreBreakdown** — distribution bars for the summary on FacilityDetail / ProviderDetail
+- **ReviewCard**   — individual review with author, date, optional breakdown, delete affordance
+- **ReviewForm**   — inline submit form with optional criteria (propreté, accueil, attente, prix, équipement)
+
+Review hooks in `hooks/api.ts`:
+- `useFacilityReviews(facilityId)` / `useProviderReviews(providerId)`
+- `useCreateReview()` — optimistic invalidation
+- `useDeleteReview()` — gated to review owner
 
 ---
 
