@@ -1,15 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Pill, Stethoscope, Building2, FlaskConical, HeartPulse,
   Baby, Smile, Glasses, Brain, Syringe, MapPin as MapPinIcon, Star,
   Loader2, Phone, ArrowRight, Crosshair, Navigation, AlertCircle,
+  ChevronDown,
 } from 'lucide-react';
-import { useFacilities } from '../hooks/api';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { facilities } from '../lib/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useLocationStore } from '../stores/location';
 import { Card, EmptyState } from '../components/ui';
 import { formatError } from '../lib/errors';
+import type { Facility } from '../lib/api';
 
 type Kind = 'all' | 'pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center' | 'dispensary' | 'maternity' | 'dental' | 'optical' | 'mental_health' | 'vaccination' | 'other';
 
@@ -28,6 +31,8 @@ const kindConfig: Record<Kind, { label: string; icon: typeof Pill; color: string
   vaccination:   { label: 'Vaccinations',      icon: Syringe,       color: 'text-lime-600' },
   other:         { label: 'Autres',            icon: MapPinIcon,    color: 'text-gray-500' },
 };
+
+const PAGE_SIZE = 20;
 
 export function NearbyPage() {
   const navigate = useNavigate();
@@ -53,19 +58,44 @@ export function NearbyPage() {
   const lng = geo.position?.lng ?? store.lng ?? null;
   const hasCoords = lat != null && lng != null;
 
-  const params = useMemo(() => {
-    if (!hasCoords) return undefined;
-    return {
-      lat,
-      lng,
-      radiusKm,
-      limit: 20,
-      ...(kind !== 'all' ? { kind } : {}),
-    };
-  }, [hasCoords, lat, lng, radiusKm, kind]);
+  const getNextPageParam = useCallback((lastPage: { pagination: { limit: number; offset: number; count: number; total: number } }) => {
+    const p = lastPage.pagination;
+    const nextOffset = p.offset + p.count;
+    return nextOffset < p.total ? nextOffset : undefined;
+  }, []);
 
-  const { data, isLoading, error } = useFacilities(params);
-  const list = data?.data ?? [];
+  const queryKeyBase = useMemo(() => {
+    return [
+      'facilities',
+      'nearby',
+      { lat, lng, radiusKm, kind: kind !== 'all' ? kind : undefined },
+    ];
+  }, [lat, lng, radiusKm, kind]);
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: queryKeyBase,
+    queryFn: ({ pageParam = 0 }) =>
+      facilities.list({
+        lat: lat ?? undefined,
+        lng: lng ?? undefined,
+        radiusKm,
+        limit: PAGE_SIZE,
+        offset: pageParam,
+        kind: kind !== 'all' ? kind : undefined,
+      }),
+    getNextPageParam,
+    enabled: hasCoords,
+    initialPageParam: 0,
+  });
+
+  const total = data?.pages[0]?.pagination?.total ?? 0;
 
   const header = (
     <div className="space-y-2 px-4 pt-4">
@@ -75,7 +105,7 @@ export function NearbyPage() {
       </div>
       <p className="text-xs text-gray-500">
         {hasCoords
-          ? `${list.length} résultat(s) dans un rayon de ${radiusKm} km`
+          ? `${total} résultat(s) dans un rayon de ${radiusKm} km`
           : 'Activez votre position pour découvrir les établissements les plus proches.'}
       </p>
     </div>
@@ -115,6 +145,73 @@ export function NearbyPage() {
       </div>
     );
   }
+
+  // Render card for a single facility
+  const renderCard = (f: Facility) => {
+    const cfg = kindConfig[((f?.kind ?? "all") as Kind) ?? 'all'] ?? kindConfig.all;
+    const Icon = cfg.icon;
+    return (
+      <Card key={f.id} className="flex items-start gap-3">
+        <div className={`mt-0.5 rounded-lg bg-gray-50 p-2 ${cfg.color}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-gray-900 truncate">{f.name}</h3>
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{f.address ?? f.city ?? 'Adresse inconnue'}</span>
+          </div>
+          {f.phone && (
+            <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+              <Phone className="h-3 w-3 shrink-0" />
+              <a href={`tel:${f.phone}`} className="text-brand-600 hover:underline">{f.phone}</a>
+            </div>
+          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            {f.reviewCount && f.reviewCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                {f.averageRating?.toFixed(1)} ({f.reviewCount})
+              </span>
+            )}
+            {f.distanceKm != null && (
+              <span className="inline-flex items-center gap-0.5 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                <Crosshair className="h-3 w-3" />
+                {Math.round(f.distanceKm * 10) / 10} km
+              </span>
+            )}
+            {f.travelTimeWalkMinutes != null && f.travelTimeWalkMinutes <= 60 && (
+              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700" title="À pied">
+                🚶 {f.travelTimeWalkMinutes} min
+              </span>
+            )}
+            {f.travelTimeDriveMinutes != null && (
+              <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700" title="En voiture">
+                🚗 {f.travelTimeDriveMinutes} min
+              </span>
+            )}
+            {f.is24h && (
+              <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                24h/24
+              </span>
+            )}
+            {f.hasEmergency && (
+              <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                Urgence
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => navigate(`/facility/${f.id}`)}
+          className="self-center shrink-0 rounded-full p-2 text-brand-600 hover:bg-brand-50"
+          title="Voir détails"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-3 pb-6">
@@ -164,75 +261,37 @@ export function NearbyPage() {
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — render by page to avoid duplicate keys */}
       <div className="space-y-2 px-4">
-        {list.filter(Boolean)?.map((f) => {
-          const cfg = kindConfig[((f?.kind ?? "all") as Kind) ?? 'all'] ?? kindConfig.all;
-          const Icon = cfg.icon;
-          return (
-            <Card key={f.id} className="flex items-start gap-3">
-              <div className={`mt-0.5 rounded-lg bg-gray-50 p-2 ${cfg.color}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 truncate">{f.name}</h3>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{f.address ?? f.city ?? 'Adresse inconnue'}</span>
-                </div>
-                {f.phone && (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-                    <Phone className="h-3 w-3 shrink-0" />
-                    <a href={`tel:${f.phone}`} className="text-brand-600 hover:underline">{f.phone}</a>
-                  </div>
-                )}
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  {f.reviewCount && f.reviewCount > 0 && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {f.averageRating?.toFixed(1)} ({f.reviewCount})
-                    </span>
-                  )}
-                  {f.distanceKm != null && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
-                      <Crosshair className="h-3 w-3" />
-                      {Math.round(f.distanceKm * 10) / 10} km
-                    </span>
-                  )}
-                  {f.travelTimeWalkMinutes != null && f.travelTimeWalkMinutes <= 60 && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700" title="À pied">
-                      🚶 {f.travelTimeWalkMinutes} min
-                    </span>
-                  )}
-                  {f.travelTimeDriveMinutes != null && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700" title="En voiture">
-                      🚗 {f.travelTimeDriveMinutes} min
-                    </span>
-                  )}
-                  {f.is24h && (
-                    <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                      24h/24
-                    </span>
-                  )}
-                  {f.hasEmergency && (
-                    <span className="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
-                      Urgence
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => navigate(`/facility/${f.id}`)}
-                className="self-center shrink-0 rounded-full p-2 text-brand-600 hover:bg-brand-50"
-                title="Voir détails"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </Card>
-          );
-        })}
+        {data?.pages.map((page, pageIdx) => (
+          <React.Fragment key={pageIdx}>
+            {page.data?.filter(Boolean).map(renderCard)}
+          </React.Fragment>
+        ))}
 
-        {!list.length && !isLoading && (
+        {/* Load more */}
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-medium text-brand-600 hover:bg-gray-50 disabled:opacity-60"
+          >
+            {isFetchingNextPage ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                <ChevronDown className="h-4 w-4" />
+                Voir plus
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* Empty state */}
+        {((data?.pages.length ?? 0) === 0 || (data?.pages[0]?.data?.length ?? 0) === 0) && !isLoading && (
           <EmptyState
             icon={MapPin}
             title="Aucun établissement trouvé"

@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { eq, and, sql, ilike, inArray, gte, lte } from 'drizzle-orm';
+import { eq, and, sql, ilike, inArray, gte, lte, count } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { facilities, users, providerProfiles, cities, appointments, providerSchedules } from '../db/schema/index.js';
 
@@ -64,6 +64,16 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     let data;
+    let total = 0;
+
+    // Count total matching rows (without limit/offset)
+    const countBuilder = db
+      .select({ total: count() })
+      .from(facilities)
+      .where(and(...conditions));
+    const [countResult] = await countBuilder;
+    total = Number(countResult?.total ?? 0);
+
     if (q.lat && q.lng) {
       // SQL-level haversine distance for accurate filtering + sorting
       const lat = parseFloat(q.lat);
@@ -139,11 +149,11 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
 
     return {
       data,
-      pagination: { limit, offset, count: data.length },
+      pagination: { limit, offset, count: data.length, total },
     };
   });
 
-  // GET /facilities/nearby — legacy compatible endpoint
+  // GET /facilities/nearby -- legacy compatible endpoint
   // Must be registered BEFORE /facilities/:id to avoid shadowing
   fastify.get('/facilities/nearby', async (request, reply) => {
     const { latitude, longitude, radius, limit: nearbyLimit } = request.query as Record<string, string>;
@@ -218,7 +228,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
     return { ...facility, providers };
   });
 
-  // GET /facilities/:id/available-slots — available booking slots for a date
+  // GET /facilities/:id/available-slots -- available booking slots for a date
   fastify.get('/facilities/:id/available-slots', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { date, providerId } = request.query as { date: string; providerId?: string };

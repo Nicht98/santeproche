@@ -221,12 +221,13 @@ export interface FacilitiesQuery {
   lng?: number;
   radiusKm?: number;
   limit?: number;
+  offset?: number;
   search?: string;
   kind?: string;
 }
 export const facilities = {
   list: (params?: FacilitiesQuery) =>
-    api<{ data: Facility[]; pagination: { limit: number; offset: number; count: number } }>(`/facilities?${qs(params)}`),
+    api<{ data: Facility[]; pagination: { limit: number; offset: number; count: number; total: number } }>(`/facilities?${qs(params)}`),
   get: (id: string) =>
     api<{ data: FacilityDetail }>(`/facilities/${id}`),
   stock: (id: string, q?: string) =>
