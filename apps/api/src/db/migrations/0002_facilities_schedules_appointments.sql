@@ -4,7 +4,7 @@
 -- ENUMS
 -- ============================================================
 DO $$ BEGIN
-  CREATE TYPE facility_kind AS ENUM ('pharmacy', 'hospital', 'clinic', 'laboratory', 'health_center', 'other');
+  CREATE TYPE facility_kind AS ENUM ('pharmacy', 'hospital', 'clinic', 'laboratory', 'health_center', 'dispensary', 'maternity', 'dental', 'optical', 'mental_health', 'vaccination', 'other');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
