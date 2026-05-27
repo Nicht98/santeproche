@@ -32,7 +32,7 @@ export const facilityRoutes: FastifyPluginAsync = async (fastify) => {
       conditions.push(eq(facilities.cityId, parseInt(q.cityId, 10)));
     }
     if (q.kind) {
-      const kinds = q.kind.split(',') as ('pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center' | 'other')[];
+      const kinds = q.kind.split(',') as ('pharmacy' | 'hospital' | 'clinic' | 'laboratory' | 'health_center' | 'dispensary' | 'maternity' | 'dental' | 'optical' | 'mental_health' | 'vaccination' | 'other')[];
       conditions.push(inArray(facilities.kind, kinds));
     }
     if (q.search) {

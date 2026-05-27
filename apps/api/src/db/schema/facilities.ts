@@ -3,7 +3,9 @@ import { cities } from './cities.js';
 import { users } from './users.js';
 
 export const facilityKindEnum = pgEnum('facility_kind', [
-  'pharmacy', 'hospital', 'clinic', 'laboratory', 'health_center', 'other'
+  'pharmacy', 'hospital', 'clinic', 'laboratory', 'health_center',
+  'dispensary', 'maternity', 'dental', 'optical', 'mental_health', 'vaccination',
+  'other',
 ]);
 
 export const facilityStatusEnum = pgEnum('facility_status', [
