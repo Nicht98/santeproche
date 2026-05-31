@@ -87,6 +87,46 @@ export const auth = {
     api<AuthResponse>('/auth/otp/verify', { method: 'POST', body: JSON.stringify(body) }),
 };
 
+/* ---------- SOS ---------- */
+export interface SOSRequest {
+  id: string;
+  requesterId: string;
+  lat: number | null;
+  lng: number | null;
+  address: string | null;
+  description: string | null;
+  phone: string | null;
+  bloodType: string | null;
+  allergies: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  status: 'active' | 'assigned' | 'resolved';
+  assignedProviderId: string | null;
+  assignedFacilityId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+export interface CreateSOSBody {
+  lat?: number;
+  lng?: number;
+  address?: string;
+  description?: string;
+  phone?: string;
+  bloodType?: string;
+  allergies?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+}
+export const sos = {
+  create: (body: CreateSOSBody) =>
+    api<{ status: string; sos: SOSRequest }>('/sos', { method: 'POST', body: JSON.stringify(body) }),
+  mine: (params?: { limit?: number; offset?: number }) =>
+    api<{ data: SOSRequest[]; pagination: { limit: number; offset: number; count: number } }>(`/sos/me?${qs(params)}`),
+  resolve: (id: string) =>
+    api<{ status: string; sos: SOSRequest }>(`/sos/${id}/resolve`, { method: 'PATCH' }),
+};
+
 /* ---------- Patients ---------- */
 export interface PatientRegisterBody {
   firstName: string;
@@ -122,6 +162,8 @@ export const patients = {
     api<{ status: string; message: string; user: PatientProfile }>('/patients/register', {
       method: 'POST', body: JSON.stringify(body),
     }),
+  me: () =>
+    api<{ user: any; profile: any; isProfileComplete: boolean }>('/patients/me'),
 };
 
 /* ---------- Providers ---------- */

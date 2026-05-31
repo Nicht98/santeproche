@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Stethoscope, MapPin, MessageSquare, User, Navigation, ClipboardList } from 'lucide-react';
+import { Home, Stethoscope, MapPin, MessageSquare, User, Navigation, ClipboardList, HeartPulse } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 
 export function Layout() {
@@ -44,6 +44,19 @@ export function Layout() {
           </div>
           <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </nav>
+      )}
+
+      {/* Floating SOS button — always visible on patient routes */}
+      {!hideNav && !isGuestAuthRoute && !isProvider && location.pathname !== '/sos' && (
+        <button
+          onClick={() => navigate('/sos')}
+          className="fixed bottom-20 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-rose-600 to-red-700 text-white shadow-lg shadow-rose-500/30 transition-all duration-200 hover:scale-110 hover:shadow-xl active:scale-95"
+          aria-label="SOS Urgence"
+          title="SOS Urgence"
+        >
+          <HeartPulse className="h-6 w-6" />
+          <span className="absolute inset-0 rounded-full ring-2 ring-white/30 animate-ping opacity-40" />
+        </button>
       )}
     </div>
   );

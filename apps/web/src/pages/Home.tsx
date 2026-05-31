@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert, Navigation, Clock, ChevronRight } from 'lucide-react';
+import { MapPin, Search, Stethoscope, CalendarCheck, ArrowRight, ShieldAlert, Navigation, Clock, ChevronRight, HeartPulse } from 'lucide-react';
 import { useFacilities, useProviders } from '../hooks/api';
 import { useAuthStore } from '../stores/auth';
 import { useLocationStore } from '../stores/location';
@@ -65,6 +65,21 @@ export function Home() {
 
       <div className="px-4 space-y-5">
         <LocationBanner />
+
+        {/* SOS Emergency Banner */}
+        <button
+          onClick={() => navigate('/sos')}
+          className="group animate-slide-up flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 p-4 shadow-lg shadow-rose-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-rose-500/30 active:scale-[0.98]"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-105">
+            <HeartPulse className="h-6 w-6 text-white" />
+          </div>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-sm font-extrabold text-white">SOS Urgence</p>
+            <p className="text-xs text-red-100">Alerte rapide · Numéros d\'urgence · Établissements à proximité</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-white/60 transition-transform group-hover:translate-x-0.5" />
+        </button>
 
         {isGuest && (
           <div className="animate-slide-up rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm">

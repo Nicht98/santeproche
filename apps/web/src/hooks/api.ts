@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { auth, patients, providers, facilities, appointments, chat, reviews } from '../lib/api';
+import { auth, patients, providers, facilities, appointments, chat, reviews, sos } from '../lib/api';
 import type { UpdateStatusBody } from '../lib/api';
 
 /* ---------- Auth ---------- */
@@ -23,6 +23,14 @@ export function useRegisterPatient() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['me'] });
     },
+  });
+}
+
+export function usePatientProfile() {
+  return useQuery({
+    queryKey: ['patients', 'me'],
+    queryFn: patients.me,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -208,6 +216,34 @@ export function useDeleteReview() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews'] });
       qc.invalidateQueries({ queryKey: ['facilities'] });
+    },
+  });
+}
+
+/* ---------- SOS ---------- */
+export function useCreateSOS() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: sos.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sos', 'me'] });
+    },
+  });
+}
+
+export function useMySOS() {
+  return useQuery({
+    queryKey: ['sos', 'me'],
+    queryFn: () => sos.mine(),
+  });
+}
+
+export function useResolveSOS() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: sos.resolve,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sos', 'me'] });
     },
   });
 }

@@ -16,6 +16,7 @@ import { Booking } from './pages/Booking';
 import { Chat } from './pages/Chat';
 import { SearchPage } from './pages/SearchPage';
 import { NearbyPage } from './pages/NearbyPage';
+import { SOSPage } from './pages/SOSPage';
 import { PatientRegister } from './pages/PatientRegister';
 import { Profile } from './pages/Profile';
 
@@ -99,6 +100,7 @@ function InnerApp() {
         <Route path="/facilities" element={<AuthOrGuest allowGuest><Facilities /></AuthOrGuest>} />
         <Route path="/facility/:id" element={<AuthOrGuest allowGuest><FacilityDetail /></AuthOrGuest>} />
         <Route path="/nearby" element={<AuthOrGuest allowGuest><NearbyPage /></AuthOrGuest>} />
+        <Route path="/sos" element={<AuthOrGuest allowGuest><SOSPage /></AuthOrGuest>} />
 
         {/* Protected patient routes: patients only */}
         <Route path="/appointments" element={<PatientOnly><Appointments /></PatientOnly>} />
